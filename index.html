@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Podgląd Kamerki</title>
+    <title>Wykrywanie Osoby - Kamerka</title>
+    <!-- Ładowanie bibliotek TensorFlow.js i modelu COCO-SSD -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,16 +21,36 @@
 
         h1 {
             color: #333;
+            margin-bottom: 5px;
         }
 
-        #webcam {
-            width: 100%;
-            max-width: 640px;
-            height: auto;
+        #status {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+        }
+
+        /* Ukrywamy element video, bo obraz będziemy przesyłać na canvas */
+        video {
+            display: none;
+        }
+
+        /* Canvas służy do wyświetlania wideo i rysowania ramek DETEKCJI */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             border: 3px solid #333;
             border-radius: 8px;
-            background-color: #000;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background-color: #000;
         }
 
         .controls {
@@ -47,80 +70,120 @@
             transition: background-color 0.2s;
         }
 
-        #btnStart {
-            background-color: #28a745;
-        }
-
-        #btnStart:hover {
-            background-color: #218838;
-        }
-
-        #btnStop {
-            background-color: #dc3545;
-        }
-
-        #btnStop:hover {
-            background-color: #c82333;
-        }
-
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
+        #btnStart { background-color: #28a745; }
+        #btnStart:hover { background-color: #218838; }
+        #btnStop { background-color: #dc3545; }
+        #btnStop:hover { background-color: #c82333; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <h1>Aplikacja Kamerki</h1>
+    <h1>Wykrywanie Człowieka</h1>
+    <div id="status">Ładowanie modelu SI... proszę czekać.</div>
 
-    <!-- Element wideo wyświetlający obraz z kamery -->
-    <video id="webcam" autoplay playsinline></video>
+    <div class="container">
+        <video id="webcam" width="640" height="480" autoplay playsinline></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
 
-    <!-- Przyciski do sterowania -->
     <div class="controls">
-        <button id="btnStart" onclick="startCamera()">Włącz kamerkę</button>
+        <button id="btnStart" onclick="startCamera()" disabled>Włącz kamerkę</button>
         <button id="btnStop" onclick="stopCamera()" disabled>Wyłącz kamerkę</button>
     </div>
 
     <script>
+        let model = null;
         let stream = null;
-        const videoElement = document.getElementById('webcam');
+        let isRunning = false;
+
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('status');
         const btnStart = document.getElementById('btnStart');
         const btnStop = document.getElementById('btnStop');
 
-        // Funkcja uruchamiająca kamerkę
+        // 1. Ładowanie modelu AI przy starcie strony
+        cocoSsd.load().then(loadedModel => {
+            model = loadedModel;
+            statusText.innerText = "Model gotowy! Kliknij 'Włącz kamerkę'.";
+            statusText.style.color = "green";
+            btnStart.disabled = false;
+        }).catch(err => {
+            console.error("Błąd podczas ładowania modelu:", err);
+            statusText.innerText = "Nie udało się załadować modelu AI.";
+            statusText.style.color = "red";
+        });
+
+        // 2. Uruchomienie kamery
         async function startCamera() {
             try {
-                // Prośba o dostęp do urządzenia wideo
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: true, 
-                    audio: false 
-                });
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
                 
-                // Przypisanie strumienia z kamery do elementu <video>
-                videoElement.srcObject = stream;
-
-                // Aktywacja / dezaktywacja odpowiednich przycisków
-                btnStart.disabled = true;
-                btnStop.disabled = false;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    isRunning = true;
+                    btnStart.disabled = true;
+                    btnStop.disabled = false;
+                    detectLoop(); // Rozpoczęcie pętli detekcji
+                };
             } catch (err) {
-                console.error("Błąd podczas uzyskiwania dostępu do kamerki: ", err);
-                alert("Nie udało się uzyskać dostępu do kamerki. Upewnij się, że wyraziłeś zgodę w przeglądarce i że żadna inna aplikacja z niej nie korzysta.");
+                console.error("Błąd dostępu do kamery:", err);
+                alert("Brak dostępu do kamerki!");
             }
         }
 
-        // Funkcja zatrzymująca kamerkę
-        function stopCamera() {
-            if (stream) {
-                // Zatrzymanie wszystkich ścieżek wideo
-                stream.getTracks().forEach(track => track.stop());
-                videoElement.srcObject = null;
-                stream = null;
+        // 3. Pętla analizująca klatka po klatce
+        async function detectLoop() {
+            if (!isRunning) return;
 
-                // Aktywacja / dezaktywacja odpowiednich przycisków
-                btnStart.disabled = false;
-                btnStop.disabled = true;
+            // Przerysowanie obrazu z wideo na canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Detekcja obiektów przez model COCO-SSD
+            const predictions = await model.detect(video);
+
+            // Filtrowanie wyłącznie wykrytych LUDZI ('person')
+            predictions.forEach(prediction => {
+                if (prediction.class === 'person') {
+                    const [x, y, width, height] = prediction.bbox;
+                    const score = Math.round(prediction.score * 100);
+
+                    // Rysowanie zielonej ramki
+                    ctx.strokeStyle = '#00FF00';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(x, y, width, height);
+
+                    // Tło pod tekst
+                    ctx.fillStyle = '#00FF00';
+                    const text = `Człowiek: ${score}%`;
+                    ctx.font = '18px Arial';
+                    const textWidth = ctx.measureText(text).width;
+                    ctx.fillRect(x, y > 25 ? y - 25 : y, textWidth + 10, 25);
+
+                    // Napis z pewnością detekcji
+                    ctx.fillStyle = '#000000';
+                    ctx.fillText(text, x + 5, y > 25 ? y - 7 : y + 18);
+                }
+            });
+
+            // Kolejna klatka animacji
+            requestAnimationFrame(detectLoop);
+        }
+
+        // 4. Zatrzymanie kamery
+        function stopCamera() {
+            isRunning = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                stream = null;
             }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            btnStart.disabled = false;
+            btnStop.disabled = true;
         }
     </script>
 

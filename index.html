@@ -83,6 +83,12 @@
       border: 1px solid #30363d;
     }
 
+    button.danger {
+      background-color: transparent;
+      color: #f85149;
+      border: 1px solid #f85149;
+    }
+
     .step {
       display: none;
     }
@@ -157,7 +163,6 @@
       perspective: 600px;
     }
 
-    /* Ściana / Przeszkoda */
     .wall {
       position: absolute;
       left: 30px;
@@ -187,7 +192,6 @@
       letter-spacing: 2px;
     }
 
-    /* Telefon z animacją */
     .phone-wrapper {
       position: absolute;
       width: 50px;
@@ -218,7 +222,6 @@
       justify-content: center;
     }
 
-    /* Stożek widzenia / Promień nieba */
     .view-beam {
       position: absolute;
       top: 50%;
@@ -232,23 +235,12 @@
     }
 
     @keyframes phonePositionAnim {
-      0% {
-        transform: translate(-30px, 0px) rotateY(0deg);
-      }
-      30% {
-        /* Przesunięcie z tyłu ściany */
-        transform: translate(20px, -10px) rotateY(-20deg);
-      }
-      60% {
-        /* Celowanie w otwarte niebo */
-        transform: translate(50px, -20px) rotate(-35deg);
-      }
-      100% {
-        transform: translate(-30px, 0px) rotateY(0deg);
-      }
+      0% { transform: translate(-30px, 0px) rotateY(0deg); }
+      30% { transform: translate(20px, -10px) rotateY(-20deg); }
+      60% { transform: translate(50px, -20px) rotate(-35deg); }
+      100% { transform: translate(-30px, 0px) rotateY(0deg); }
     }
 
-    /* Wskaźnik kompasu */
     .compass-box {
       background: #0d1117;
       border: 2px dashed var(--accent-green);
@@ -269,7 +261,7 @@
   <div class="card">
     
     <!-- Krok 0: Powitanie -->
-    <div id="step-0" class="step active">
+    <div id="step-0" class="step">
       <h2>Hej! 👋</h2>
       <p>Widać, że jesteś tutaj po raz pierwszy!</p>
       <div class="btn-group">
@@ -311,12 +303,11 @@
       </div>
     </div>
 
-    <!-- Krok 3: Animacja instruktażowa i Kompas -->
+    <!-- Krok 3: Animacja i Kompas -->
     <div id="step-3" class="step">
       <h2>Kierunek obserwacji 🧭</h2>
       <p>Odsłoń telefon od ściany i skieruj go w stronę widocznego nieba:</p>
       
-      <!-- ANIMACJA JAK USTAWIĆ TELEFON -->
       <div class="anim-container">
         <div class="wall"></div>
         <div class="phone-wrapper">
@@ -338,21 +329,51 @@
       </div>
     </div>
 
-    <!-- Podsumowanie -->
+    <!-- Ekran Główny / Podsumowanie Kalibracji -->
     <div id="step-final" class="step">
-      <h2>Kalibracja ukończona! 🚀</h2>
-      <p>Pomyślnie skonfigurowano środowisko obserwacyjne.</p>
+      <h2>Gotowy do obserwacji! 🚀</h2>
+      <p>Twoje ustawienia są zapisane w pamięci przeglądarki:</p>
+      
       <div id="summary" style="background: #0d1117; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left;"></div>
+
+      <div class="btn-group" style="margin-top: 25px;">
+        <button onclick="startApp()">Przejdź do aplikacji</button>
+        <button class="danger" onclick="resetCalibration()">Wykonaj kalibrację ponownie</button>
+      </div>
     </div>
 
   </div>
 
   <script>
-    const config = {
+    const STORAGE_KEY = 'astro_calibration_data';
+
+    let config = {
+      calibrated: false,
       location: null,
       fov: 180,
       heading: null
     };
+
+    // SPRAWDZANIE LOCALSTORAGE PRZY STARTOWANIU STRONY
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      
+      if (savedData) {
+        try {
+          config = JSON.parse(savedData);
+          if (config.calibrated) {
+            showSummary();
+            nextStep('final');
+            return;
+          }
+        } catch(e) {
+          console.error("Błąd odczytu localStorage", e);
+        }
+      }
+      
+      // Jeśli brak zapisu w localStorage -> zacznij od kroku 0
+      nextStep(0);
+    });
 
     function nextStep(stepNumber) {
       document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -360,7 +381,10 @@
     }
 
     function skipCalibration() {
-      alert("Witaj z powrotem! Pomijamy kalibrację.");
+      config.calibrated = true;
+      saveToLocalStorage();
+      showSummary();
+      nextStep('final');
     }
 
     // 1. GPS
@@ -397,7 +421,6 @@
     let isDragging = false;
 
     function updateDialFromAngle(angleDeg) {
-      // Ograniczamy kąt do zakresu 30° - 360°
       let angle = Math.max(30, Math.min(360, angleDeg));
       config.fov = Math.round(angle);
       
@@ -417,7 +440,6 @@
       const dx = clientX - centerX;
       const dy = clientY - centerY;
 
-      // Obliczanie kąta w stopniach od góry (12 o'clock)
       let rad = Math.atan2(dy, dx);
       let deg = rad * (180 / Math.PI) + 90;
       if (deg < 0) deg += 360;
@@ -433,14 +455,13 @@
     window.addEventListener('touchmove', (e) => { if (isDragging) handleDialMove(e); });
     window.addEventListener('touchend', () => { isDragging = false; });
 
-    // Inicjalizacja domyślnego kąta 180°
     updateDialFromAngle(180);
 
     function saveFOVAndNext() {
       nextStep(3);
     }
 
-    // 3. OBSŁUGA CZUJNIKÓW KIERUNKU / KOMPASU
+    // 3. CZUJNIK KIERUNKU / KOMPAS
     function requestOrientationPermission() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
@@ -475,19 +496,45 @@
     }
 
     function getDirectionName(deg) {
+      if (deg === null) return 'Nie określono';
       const directions = ['Północ (N)', 'Północny Wschód (NE)', 'Wschód (E)', 'Południowy Wschód (SE)', 'Południe (S)', 'Południowy Zachód (SW)', 'Zachód (W)', 'Północny Zachód (NW)'];
       const index = Math.round(deg / 45) % 8;
       return directions[index];
     }
 
+    // ZAPIS I PODSUMOWANIE
     function finishCalibration() {
+      config.calibrated = true;
+      saveToLocalStorage();
+      showSummary();
       nextStep('final');
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    }
+
+    function showSummary() {
       const summaryDiv = document.getElementById('summary');
       summaryDiv.innerHTML = `
-        <p style="margin:5px 0"><strong>Szerokość/Długość:</strong> ${config.location ? config.location.lat.toFixed(4) + ', ' + config.location.lon.toFixed(4) : 'Nie określono'}</p>
+        <p style="margin:5px 0"><strong>GPS:</strong> ${config.location ? config.location.lat.toFixed(4) + ', ' + config.location.lon.toFixed(4) : 'Brak danych'}</p>
         <p style="margin:5px 0"><strong>Pole widzenia:</strong> ${config.fov}°</p>
-        <p style="margin:5px 0"><strong>Azymut kierunku:</strong> ${config.heading !== null ? config.heading + '° (' + getDirectionName(config.heading) + ')' : 'Nie wyznaczono'}</p>
+        <p style="margin:5px 0"><strong>Kierunek azymutu:</strong> ${config.heading !== null ? config.heading + '° (' + getDirectionName(config.heading) + ')' : 'Nie wyznaczono'}</p>
       `;
+    }
+
+    function resetCalibration() {
+      localStorage.removeItem(STORAGE_KEY);
+      config = { calibrated: false, location: null, fov: 180, heading: null };
+      updateDialFromAngle(180);
+      document.getElementById('headingDisplay').innerText = '---°';
+      document.getElementById('directionText').innerText = 'Oczekiwanie na czujnik...';
+      document.getElementById('finishBtn').style.display = 'none';
+      nextStep(0);
+    }
+
+    function startApp() {
+      alert("Przejście do głównego widoku obserwacyjnego!");
     }
   </script>
 </body>

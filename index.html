@@ -1,191 +1,295 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wykrywanie Osoby - Kamerka</title>
-    <!-- Ładowanie bibliotek TensorFlow.js i modelu COCO-SSD -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f0f2f5;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalibracja Obserwacyjna</title>
+  <style>
+    :root {
+      --bg-color: #0b0e14;
+      --card-bg: #161b22;
+      --accent: #58a6ff;
+      --text: #f0f6fc;
+      --text-dim: #8b949e;
+    }
 
-        h1 {
-            color: #333;
-            margin-bottom: 5px;
-        }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-        #status {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
+    .card {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid #30363d;
+    }
 
-        .container {
-            position: relative;
-            width: 640px;
-            height: 480px;
-        }
+    h2 {
+      margin-top: 0;
+      color: var(--accent);
+    }
 
-        /* Ukrywamy element video, bo obraz będziemy przesyłać na canvas */
-        video {
-            display: none;
-        }
+    p {
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
 
-        /* Canvas służy do wyświetlania wideo i rysowania ramek DETEKCJI */
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            border: 3px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            background-color: #000;
-        }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
 
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
+    button {
+      background-color: var(--accent);
+      color: #0d1117;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
 
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
 
-        #btnStart { background-color: #28a745; }
-        #btnStart:hover { background-color: #218838; }
-        #btnStop { background-color: #dc3545; }
-        #btnStop:hover { background-color: #c82333; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-    </style>
+    button.secondary {
+      background-color: transparent;
+      color: var(--text);
+      border: 1px solid #30363d;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+    }
+
+    /* Slider styling */
+    .slider-container {
+      margin: 25px 0;
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .deg-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--accent);
+      margin-top: 10px;
+    }
+
+    /* Direction Display */
+    .compass-box {
+      background: #0d1117;
+      border: 2px dashed var(--accent);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .heading-val {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #3fb950;
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Wykrywanie Człowieka</h1>
-    <div id="status">Ładowanie modelu SI... proszę czekać.</div>
-
-    <div class="container">
-        <video id="webcam" width="640" height="480" autoplay playsinline></video>
-        <canvas id="canvas" width="640" height="480"></canvas>
+  <div class="card">
+    
+    <!-- Krok 0: Powitanie -->
+    <div id="step-0" class="step active">
+      <h2>Hej! 👋</h2>
+      <p>Widać, że jesteś tutaj po raz pierwszy!</p>
+      <div class="btn-group">
+        <button onclick="nextStep(1)">Tak, jestem nowy</button>
+        <button class="secondary" onclick="skipCalibration()">Kiedyś już używałem tej strony</button>
+      </div>
     </div>
 
-    <div class="controls">
-        <button id="btnStart" onclick="startCamera()" disabled>Włącz kamerkę</button>
-        <button id="btnStop" onclick="stopCamera()" disabled>Wyłącz kamerkę</button>
+    <!-- Krok 1: Pytanie o kalibrację i GPS -->
+    <div id="step-1" class="step">
+      <h2>Kalibracja miejsca 📍</h2>
+      <p>Czy chciałbyś przejść kalibrację miejsca, w którym obserwujesz?</p>
+      <p><small>Jeśli tak, wyjdź w miejsce obserwacji i kliknij poniżej.</small></p>
+      <div class="btn-group">
+        <button onclick="getGPSAndNext()">Tak, potwierdź lokalizację</button>
+        <button class="secondary" onclick="nextStep(2)">Pomiń GPS</button>
+      </div>
+      <p id="gps-status" style="font-size: 0.85rem; color: #e3b341;"></p>
     </div>
 
-    <script>
-        let model = null;
-        let stream = null;
-        let isRunning = false;
+    <!-- Krok 2: Widok/Pole widzenia (Slider) -->
+    <div id="step-2" class="step">
+      <h2>Pole widzenia 👁️</h2>
+      <p>Jaki masz widok ze swojego miejsca? Ustaw zakres widocznego nieba:</p>
+      
+      <div class="slider-container">
+        <input type="range" id="fovSlider" min="90" max="360" step="10" value="180" oninput="updateFOV(this.value)">
+        <div class="deg-value" id="fovVal">180°</div>
+      </div>
 
-        const video = document.getElementById('webcam');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const statusText = document.getElementById('status');
-        const btnStart = document.getElementById('btnStart');
-        const btnStop = document.getElementById('btnStop');
+      <div class="btn-group">
+        <button onclick="saveFOVAndNext()">Zatwierdź pole widzenia</button>
+      </div>
+    </div>
 
-        // 1. Ładowanie modelu AI przy starcie strony
-        cocoSsd.load().then(loadedModel => {
-            model = loadedModel;
-            statusText.innerText = "Model gotowy! Kliknij 'Włącz kamerkę'.";
-            statusText.style.color = "green";
-            btnStart.disabled = false;
-        }).catch(err => {
-            console.error("Błąd podczas ładowania modelu:", err);
-            statusText.innerText = "Nie udało się załadować modelu AI.";
-            statusText.style.color = "red";
-        });
+    <!-- Krok 3: Orientacja telefonu (Kompas/Żyroskop) -->
+    <div id="step-3" class="step">
+      <h2>Kierunek obserwacji 🧭</h2>
+      <p>Skieruj swój telefon w stronę przeszkody (ściany/drzewa) lub w stronę nieba, którą obserwujesz:</p>
+      
+      <div class="compass-box">
+        <div class="heading-val" id="headingDisplay">---°</div>
+        <div id="directionText" style="color: var(--text-dim);">Oczekiwanie na ruch...</div>
+      </div>
 
-        // 2. Uruchomienie kamery
-        async function startCamera() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                video.srcObject = stream;
-                
-                video.onloadedmetadata = () => {
-                    video.play();
-                    isRunning = true;
-                    btnStart.disabled = true;
-                    btnStop.disabled = false;
-                    detectLoop(); // Rozpoczęcie pętli detekcji
-                };
-            } catch (err) {
-                console.error("Błąd dostępu do kamery:", err);
-                alert("Brak dostępu do kamerki!");
+      <div class="btn-group">
+        <button onclick="requestOrientationPermission()">Włącz czujnik kierunku</button>
+        <button id="finishBtn" class="secondary" onclick="finishCalibration()" style="display:none; border-color: #3fb950;">Zakończ kalibrację</button>
+      </div>
+    </div>
+
+    <!-- Ekran końcowy -->
+    <div id="step-final" class="step">
+      <h2>Kalibracja ukończona! 🚀</h2>
+      <p>Twoje ustawienia zostały zapisane. Aplikacja jest gotowa do użycia!</p>
+      <div id="summary"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // Obiekt przechowywujący dane kalibracji
+    const config = {
+      location: null,
+      fov: 180,
+      heading: null
+    };
+
+    function nextStep(stepNumber) {
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+      document.getElementById('step-' + stepNumber).classList.add('active');
+    }
+
+    function skipCalibration() {
+      alert("Witaj z powrotem! Pomijamy kalibrację.");
+      // Tutaj w przyszłości przejdziemy do głównej części strony
+    }
+
+    // POBIERANIE LOKALIZACJI GPS
+    function getGPSAndNext() {
+      const status = document.getElementById('gps-status');
+      if ("geolocation" in navigator) {
+        status.innerText = "Pobieranie pozycji GPS...";
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            config.location = {
+              lat: position.coords.latitude,
+              lon: position.coords.longitude
+            };
+            status.innerText = "Lokalizacja zapisana!";
+            setTimeout(() => nextStep(2), 1000);
+          },
+          (error) => {
+            status.innerText = "Nie udało się pobrać GPS. Możesz przejść dalej.";
+            setTimeout(() => nextStep(2), 1500);
+          }
+        );
+      } else {
+        nextStep(2);
+      }
+    }
+
+    // SUWAK POLA WIDZENIA
+    function updateFOV(val) {
+      document.getElementById('fovVal').innerText = val + '°';
+      config.fov = val;
+    }
+
+    function saveFOVAndNext() {
+      nextStep(3);
+    }
+
+    // ŻYROSKOP / KOMPAS W TELEFONIE
+    function requestOrientationPermission() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // Wymóg na systemach iOS (iPhone)
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              window.addEventListener('deviceorientation', handleOrientation);
+            } else {
+              alert('Brak uprawnień do czujnika obrotu.');
             }
-        }
+          });
+      } else if (window.DeviceOrientationEvent) {
+        // Android i większość nowoczesnych przeglądarek
+        window.addEventListener('deviceorientation', handleOrientation);
+      } else {
+        alert('Twoje urządzenie nie obsługuje czujnika kierunku.');
+      }
 
-        // 3. Pętla analizująca klatka po klatce
-        async function detectLoop() {
-            if (!isRunning) return;
+      document.getElementById('finishBtn').style.display = 'block';
+    }
 
-            // Przerysowanie obrazu z wideo na canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    function handleOrientation(event) {
+      let alpha = event.alpha; // Kąt obrotu wokół osi Z (0-360)
+      
+      // Obsługa specyficznych danych kompasu (iOS WebKit)
+      if (event.webkitCompassHeading) {
+        alpha = event.webkitCompassHeading;
+      }
 
-            // Detekcja obiektów przez model COCO-SSD
-            const predictions = await model.detect(video);
+      if (alpha !== null) {
+        const heading = Math.round(alpha);
+        config.heading = heading;
+        
+        document.getElementById('headingDisplay').innerText = heading + '°';
+        document.getElementById('directionText').innerText = getDirectionName(heading);
+      }
+    }
 
-            // Filtrowanie wyłącznie wykrytych LUDZI ('person')
-            predictions.forEach(prediction => {
-                if (prediction.class === 'person') {
-                    const [x, y, width, height] = prediction.bbox;
-                    const score = Math.round(prediction.score * 100);
+    function getDirectionName(deg) {
+      const directions = ['Północ (N)', 'Północny Wschód (NE)', 'Wschód (E)', 'Południowy Wschód (SE)', 'Południe (S)', 'Południowy Zachód (SW)', 'Zachód (W)', 'Północny Zachód (NW)'];
+      const index = Math.round(deg / 45) % 8;
+      return directions[index];
+    }
 
-                    // Rysowanie zielonej ramki
-                    ctx.strokeStyle = '#00FF00';
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(x, y, width, height);
-
-                    // Tło pod tekst
-                    ctx.fillStyle = '#00FF00';
-                    const text = `Człowiek: ${score}%`;
-                    ctx.font = '18px Arial';
-                    const textWidth = ctx.measureText(text).width;
-                    ctx.fillRect(x, y > 25 ? y - 25 : y, textWidth + 10, 25);
-
-                    // Napis z pewnością detekcji
-                    ctx.fillStyle = '#000000';
-                    ctx.fillText(text, x + 5, y > 25 ? y - 7 : y + 18);
-                }
-            });
-
-            // Kolejna klatka animacji
-            requestAnimationFrame(detectLoop);
-        }
-
-        // 4. Zatrzymanie kamery
-        function stopCamera() {
-            isRunning = false;
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-                stream = null;
-            }
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            btnStart.disabled = false;
-            btnStop.disabled = true;
-        }
-    </script>
-
+    // PODSUMOWANIE
+    function finishCalibration() {
+      nextStep('final');
+      const summaryDiv = document.getElementById('summary');
+      summaryDiv.innerHTML = `
+        <p><strong>GPS:</strong> ${config.location ? config.location.lat.toFixed(4) + ', ' + config.location.lon.toFixed(4) : 'Brak'}</p>
+        <p><strong>Pole widzenia:</strong> ${config.fov}°</p>
+        <p><strong>Kierunek:</strong> ${config.heading !== null ? config.heading + '°' : 'Nie wyznaczono'}</p>
+      `;
+    }
+  </script>
 </body>
 </html>

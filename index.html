@@ -3,92 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trasa: Kobyłka – Ossów</title>
+    <title>Animowana Ośmiornica</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        header {
-            background-color: #0056b3;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 8px;
-        }
-        h1 {
+        * {
             margin: 0;
-            font-size: 24px;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .route-info {
-            background: white;
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        body {
+            background: linear-gradient(180deg, #1a2a6c, #27005d, #000000);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: sans-serif;
         }
-        .badge {
-            display: inline-block;
-            background: #e0e0e0;
-            padding: 5px 10px;
-            border-radius: 15px;
+
+        canvas {
+            background: transparent;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 20px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
-            margin-right: 10px;
-        }
-        ol {
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 10px;
-        }
-        .map-link {
-            display: block;
-            text-align: center;
-            margin-top: 25px;
-            padding: 12px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .map-link:hover {
-            background-color: #218838;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Trasa do Szkoły / Droga z Kobyłki do Ossowa</h1>
-    </header>
+    <canvas id="octopusCanvas" width="600" height="600"></canvas>
+    <div class="instructions">Poruszaj kursorem nad osiąmiornicą, aby zobaczyć ruch!</div>
 
-    <div class="route-info">
-        <h2>Podsumowanie trasy</h2>
-        <p>
-            <span class="badge">Długość: ok. 4–5 km</span>
-            <span class="badge">Czas spaceru: ok. 50 min</span>
-            <span class="badge">Czas roweru: ok. 15 min</span>
-        </p>
+    <script>
+        const canvas = document.getElementById('octopusCanvas');
+        const ctx = canvas.getContext('2d');
 
-        <h3>Opis najprostszej trasy (ul. Poniatowskiego / ul. Ossowska):</h3>
-        <ol>
-            <li><strong>Start:</strong> Centrum Kobyłki (np. w rejonie stacji PKP Kobyłka lub ul. Jana Pawła II).</li>
-            <li>Kieruj się na południe ul. <strong>Józefa Poniatowskiego</strong> w stronę węzła/wiaduktu.</li>
-            <li>Kontynuuj drogę prosto, przechodząc w ul. <strong>Ossowską</strong>.</li>
-            <li>Mijaj zabudowania i kieruj się w stronę terenu leśnego/łąk na granicy Kobyłki i Ossowa.</li>
-            <li><strong>Meta:</strong> Szkoła Podstawowa w Ossowie / Centrum Ossowa (ul. Matarewicza).</li>
-        </ol>
+        let time = 0;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
 
-        <a class="map-link" href="https://www.google.com/maps/dir/Koby%C5%82ka/Oss%C3%B3w/" target="_blank">
-            Otwórz trasę w Google Maps
-        </a>
-    </div>
+        // Śledzenie ruchu myszy
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        // Rysowanie pojedynczej macki
+        function drawTentacle(startX, startY, length, angleOffset, tentacleIndex) {
+            ctx.save();
+            ctx.translate(startX, startY);
+
+            let segmentLength = length / 10;
+            let currentAngle = angleOffset;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+
+            let points = [{x: 0, y: 0}];
+
+            for (let i = 0; i < 10; i++) {
+                // Fala w zależności od czasu i indeksu macki
+                let wave = Math.sin(time * 0.05 + tentacleIndex + i * 0.3) * 0.15;
+                currentAngle += wave;
+
+                let x = points[i].x + Math.cos(currentAngle) * segmentLength;
+                let y = points[i].y + Math.sin(currentAngle) * segmentLength;
+                points.push({x, y});
+            }
+
+            // Rysowanie grubej macki zwężającej się ku dołowi
+            for (let i = 0; i < points.length - 1; i++) {
+                ctx.lineWidth = Math.max(2, 18 - i * 1.6);
+                ctx.strokeStyle = '#ff5e7e';
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(points[i].x, points[i].y);
+                ctx.lineTo(points[i+1].x, points[i+1].y);
+                ctx.stroke();
+            }
+
+            // Przyssawki
+            for (let i = 2; i < points.length - 1; i += 2) {
+                ctx.beginPath();
+                ctx.arc(points[i].x + 4, points[i].y, 2 + (10 - i) * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff9ebb';
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Główna pętla animacji
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            time += 1;
+
+            // Łagodne unoszenie się (pływanie)
+            let floatY = Math.sin(time * 0.03) * 15;
+            let floatX = Math.cos(time * 0.02) * 5;
+
+            let headX = canvas.width / 2 + floatX;
+            let headY = canvas.height / 2 - 20 + floatY;
+
+            // Rysowanie 8 macek
+            const numTentacles = 8;
+            for (let i = 0; i < numTentacles; i++) {
+                let baseAngle = (Math.PI / (numTentacles - 1)) * i - Math.PI / 8;
+                // Skierowanie macek w dół
+                let angle = Math.PI / 2 + (i - (numTentacles - 1) / 2) * 0.25; 
+                drawTentacle(headX + (i - 3.5) * 8, headY + 30, 140, angle, i);
+            }
+
+            // Głowa ośmiornicy
+            ctx.beginPath();
+            ctx.arc(headX, headY, 50, Math.PI, 0, false); // Górny łuk
+            ctx.bezierCurveTo(headX + 50, headY + 40, headX - 50, headY + 40, headX - 50, headY); // Dół głowy
+            ctx.fillStyle = '#ff4069';
+            ctx.fill();
+
+            // Detale/Cieniowanie głowy
+            ctx.beginPath();
+            ctx.arc(headX - 15, headY - 15, 12, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fill();
+
+            // Oczy śledzące kursor
+            let dx = mouseX - headX;
+            let dy = mouseY - headY;
+            let angleToMouse = Math.atan2(dy, dx);
+            let pupilDist = 4;
+
+            let pupilX = Math.cos(angleToMouse) * pupilDist;
+            let pupilY = Math.sin(angleToMouse) * pupilDist;
+
+            // Lewe oko
+            ctx.beginPath();
+            ctx.arc(headX - 18, headY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(headX - 18 + pupilX, headY + pupilY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a2a6c';
+            ctx.fill();
+
+            // Prawe oko
+            ctx.beginPath();
+            ctx.arc(headX + 18, headY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(headX + 18 + pupilX, headY + pupilY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a2a6c';
+            ctx.fill();
+
+            // Mruganie oczu od czasu do czasu
+            if (Math.floor(time / 100) % 4 === 0 && time % 100 < 10) {
+                ctx.fillStyle = '#ff4069';
+                ctx.fillRect(headX - 30, headY - 10, 24, 20);
+                ctx.fillRect(headX + 6, headY - 10, 24, 20);
+            }
+
+            // Uśmiech
+            ctx.beginPath();
+            ctx.arc(headX, headY + 12, 8, 0.1 * Math.PI, 0.9 * Math.PI);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#9e002d';
+            ctx.stroke();
+
+            // Bąbelki powietrza w tle
+            for (let i = 0; i < 5; i++) {
+                let bx = (headX + Math.sin(time * 0.02 + i * 2) * 100 + i * 50) % canvas.width;
+                let by = (canvas.height - (time * 1.5 + i * 80) % canvas.height);
+                ctx.beginPath();
+                ctx.arc(bx, by, 3 + i, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Uruchomienie animacji
+        animate();
+    </script>
 
 </body>
 </html>

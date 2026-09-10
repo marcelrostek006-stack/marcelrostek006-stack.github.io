@@ -3,90 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moja Pierwsza Strona</title>
+    <title>Podgląd Kamerki</title>
     <style>
-        /* Proste style CSS */
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
+            background-color: #f0f2f5;
+        }
+
+        h1 {
             color: #333;
         }
 
-        header {
-            background-color: #0066cc;
-            color: white;
-            padding: 1rem;
-            text-align: center;
+        #webcam {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border: 3px solid #333;
+            border-radius: 8px;
+            background-color: #000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
-        main {
-            padding: 2rem;
-            max-width: 800px;
-            margin: auto;
-            background-color: white;
-        }
-
-        footer {
-            text-align: center;
-            padding: 1rem;
-            background-color: #333;
-            color: white;
-            margin-top: 2rem;
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
         }
 
         button {
-            background-color: #0066cc;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
             color: white;
             border: none;
-            padding: 10px 15px;
-            cursor: pointer;
             border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
 
-        button:hover {
-            background-color: #004b99;
+        #btnStart {
+            background-color: #28a745;
+        }
+
+        #btnStart:hover {
+            background-color: #218838;
+        }
+
+        #btnStop {
+            background-color: #dc3545;
+        }
+
+        #btnStop:hover {
+            background-color: #c82333;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Witaj na mojej stronie!</h1>
-    </header>
+    <h1>Aplikacja Kamerki</h1>
 
-    <main>
-        <section>
-            <h2>O mnie</h2>
-            <p>To jest przykładowy akapit tekstu na stronie napisanej w HTML.</p>
-        </section>
+    <!-- Element wideo wyświetlający obraz z kamery -->
+    <video id="webcam" autoplay playsinline></video>
 
-        <section>
-            <h2>Lista ulubionych rzeczy:</h2>
-            <ul>
-                <li>Programowanie</li>
-                <li>Muzyka</li>
-                <li>Podróże</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Interakcja</h2>
-            <p>Kliknij poniższy przycisk, aby zobaczyć działanieJavaScript:</p>
-            <button onclick="powitanie()">Kliknij mnie</button>
-        </section>
-    </main>
-
-    <footer>
-        <p>&copy; 2026 Moja Strona Internetowa</p>
-    </footer>
+    <!-- Przyciski do sterowania -->
+    <div class="controls">
+        <button id="btnStart" onclick="startCamera()">Włącz kamerkę</button>
+        <button id="btnStop" onclick="stopCamera()" disabled>Wyłącz kamerkę</button>
+    </div>
 
     <script>
-        // Prosty kod JavaScript
-        function powitanie() {
-            alert('Cześć! Dziękuję za kliknięcie.');
+        let stream = null;
+        const videoElement = document.getElementById('webcam');
+        const btnStart = document.getElementById('btnStart');
+        const btnStop = document.getElementById('btnStop');
+
+        // Funkcja uruchamiająca kamerkę
+        async function startCamera() {
+            try {
+                // Prośba o dostęp do urządzenia wideo
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: false 
+                });
+                
+                // Przypisanie strumienia z kamery do elementu <video>
+                videoElement.srcObject = stream;
+
+                // Aktywacja / dezaktywacja odpowiednich przycisków
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+            } catch (err) {
+                console.error("Błąd podczas uzyskiwania dostępu do kamerki: ", err);
+                alert("Nie udało się uzyskać dostępu do kamerki. Upewnij się, że wyraziłeś zgodę w przeglądarce i że żadna inna aplikacja z niej nie korzysta.");
+            }
+        }
+
+        // Funkcja zatrzymująca kamerkę
+        function stopCamera() {
+            if (stream) {
+                // Zatrzymanie wszystkich ścieżek wideo
+                stream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+                stream = null;
+
+                // Aktywacja / dezaktywacja odpowiednich przycisków
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+            }
         }
     </script>
 

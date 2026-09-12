@@ -1,541 +1,1022 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kalibracja Obserwacyjna</title>
-  <style>
-    :root {
-      --bg-color: #0b0e14;
-      --card-bg: #161b22;
-      --accent: #58a6ff;
-      --accent-green: #3fb950;
-      --text: #f0f6fc;
-      --text-dim: #8b949e;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyPlan — Astronomia & Planowanie</title>
+    <style>
+        /* RESET & BASE STYLES */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
 
-    * {
-      box-sizing: border-box;
-    }
+        /* PALETY KOLORÓW (THEMES) */
+        :root {
+            --bg-color: #000000;
+            --sidebar-bg: rgba(18, 18, 18, 0.8);
+            --card-bg: rgba(28, 28, 30, 0.65);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-hover: rgba(44, 44, 46, 0.8);
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --badge-bg: rgba(255, 255, 255, 0.1);
+            --toggle-active-bg: #ffffff;
+            --toggle-active-knob: #000000;
+            --blur-val: none;
+        }
 
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
+        body.theme-light {
+            --bg-color: #f2f2f7;
+            --sidebar-bg: rgba(255, 255, 255, 0.8);
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --card-hover: rgba(255, 255, 255, 0.95);
+            --text-primary: #000000;
+            --text-secondary: #6c6c70;
+            --badge-bg: rgba(0, 0, 0, 0.06);
+            --toggle-active-bg: #000000;
+            --toggle-active-knob: #ffffff;
+        }
 
-    .card {
-      background: var(--card-bg);
-      padding: 2rem;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-      max-width: 420px;
-      width: 90%;
-      text-align: center;
-      border: 1px solid #30363d;
-    }
+        body.theme-red {
+            --bg-color: #050000;
+            --sidebar-bg: rgba(20, 0, 0, 0.9);
+            --card-bg: rgba(35, 0, 0, 0.7);
+            --card-border: rgba(255, 0, 0, 0.2);
+            --card-hover: rgba(50, 0, 0, 0.8);
+            --text-primary: #ff3b30;
+            --text-secondary: #990000;
+            --badge-bg: rgba(255, 0, 0, 0.15);
+            --toggle-active-bg: #ff3b30;
+            --toggle-active-knob: #000000;
+        }
 
-    h2 {
-      margin-top: 0;
-      color: var(--accent);
-      font-size: 1.5rem;
-    }
+        body.has-glass {
+            --blur-val: blur(30px) !important;
+        }
 
-    p {
-      color: var(--text-dim);
-      line-height: 1.5;
-      font-size: 0.95rem;
-    }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
 
-    .btn-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 20px;
-    }
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
 
-    button {
-      background-color: var(--accent);
-      color: #0d1117;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: transform 0.2s, opacity 0.2s, background-color 0.2s;
-    }
+        sidebar {
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            backdrop-filter: var(--blur-val);
+            -webkit-backdrop-filter: var(--blur-val);
+            border-right: 1px solid var(--card-border);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
 
-    button:hover {
-      opacity: 0.9;
-      transform: translateY(-2px);
-    }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            margin-bottom: 28px;
+            cursor: pointer;
+            border-radius: 10px;
+        }
 
-    button.secondary {
-      background-color: transparent;
-      color: var(--text);
-      border: 1px solid #30363d;
-    }
+        .brand:hover {
+            background-color: var(--card-bg);
+        }
 
-    button.danger {
-      background-color: transparent;
-      color: #f85149;
-      border: 1px solid #f85149;
-    }
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
 
-    .step {
-      display: none;
-    }
+        .brand-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: var(--text-primary);
+            stroke-width: 2;
+        }
 
-    .step.active {
-      display: block;
-    }
+        .brand-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.4px;
+        }
 
-    /* OKRĄGŁY SUWAK (CIRCULAR SLIDER) */
-    .dial-container {
-      position: relative;
-      width: 220px;
-      height: 220px;
-      margin: 20px auto;
-      touch-action: none;
-      user-select: none;
-    }
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
 
-    .dial-svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+        }
 
-    .dial-bg {
-      fill: none;
-      stroke: #21262d;
-      stroke-width: 12;
-    }
+        .nav-item a svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-secondary);
+            fill: none;
+            stroke-width: 2;
+        }
 
-    .dial-progress {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 12;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.1s;
-    }
+        .nav-item.active a, .nav-item a:hover {
+            color: var(--text-primary);
+            background-color: var(--card-bg);
+        }
 
-    .dial-center {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      pointer-events: none;
-    }
+        .nav-item.active a svg, .nav-item a:hover svg {
+            stroke: var(--text-primary);
+        }
 
-    .dial-value {
-      font-size: 2.2rem;
-      font-weight: bold;
-      color: var(--accent);
-    }
+        main {
+            margin-left: 240px;
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+        }
 
-    .dial-label {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-    }
+        .view-section {
+            display: none;
+        }
 
-    /* ANIMACJA INSTRUKCJI TELEFONU I ŚCIANY */
-    .anim-container {
-      width: 100%;
-      height: 160px;
-      background: #0d1117;
-      border-radius: 14px;
-      border: 1px solid #30363d;
-      margin: 15px 0;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      perspective: 600px;
-    }
+        .view-section.active {
+            display: block;
+        }
 
-    .wall {
-      position: absolute;
-      left: 30px;
-      bottom: 20px;
-      width: 35px;
-      height: 100px;
-      background: repeating-linear-gradient(
-        45deg,
-        #30363d,
-        #30363d 10px,
-        #21262d 10px,
-        #21262d 20px
-      );
-      border: 2px solid #484f58;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 32px;
+        }
 
-    .wall::after {
-      content: 'ŚCIANA';
-      writing-mode: vertical-rl;
-      color: var(--text-dim);
-      font-size: 0.7rem;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
 
-    .phone-wrapper {
-      position: absolute;
-      width: 50px;
-      height: 90px;
-      animation: phonePositionAnim 4s infinite ease-in-out;
-    }
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
 
-    .phone {
-      width: 100%;
-      height: 100%;
-      background: #21262d;
-      border: 2px solid var(--accent);
-      border-radius: 8px;
-      position: relative;
-      box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
-    }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
 
-    .phone-screen {
-      position: absolute;
-      top: 6px;
-      left: 4px;
-      right: 4px;
-      bottom: 6px;
-      background: #0d1117;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        .card {
+            background-color: var(--card-bg);
+            backdrop-filter: var(--blur-val);
+            -webkit-backdrop-filter: var(--blur-val);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-    .view-beam {
-      position: absolute;
-      top: 50%;
-      left: 100%;
-      width: 0;
-      height: 0;
-      border-top: 25px solid transparent;
-      border-bottom: 25px solid transparent;
-      border-left: 60px solid rgba(88, 166, 255, 0.25);
-      transform: translateY(-50%);
-    }
+        .card:hover {
+            background-color: var(--card-hover);
+        }
 
-    @keyframes phonePositionAnim {
-      0% { transform: translate(-30px, 0px) rotateY(0deg); }
-      30% { transform: translate(20px, -10px) rotateY(-20deg); }
-      60% { transform: translate(50px, -20px) rotate(-35deg); }
-      100% { transform: translate(-30px, 0px) rotateY(0deg); }
-    }
+        .card-span-2 {
+            grid-column: span 2;
+        }
 
-    .compass-box {
-      background: #0d1117;
-      border: 2px dashed var(--accent-green);
-      border-radius: 12px;
-      padding: 15px;
-      margin-top: 15px;
-    }
+        .card-span-3 {
+            grid-column: span 3;
+        }
 
-    .heading-val {
-      font-size: 2.2rem;
-      font-weight: bold;
-      color: var(--accent-green);
-    }
-  </style>
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-secondary);
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .badge {
+            background-color: var(--badge-bg);
+            color: var(--text-primary);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .badge-error {
+            background-color: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+        }
+
+        .badge-success {
+            background-color: rgba(52, 199, 89, 0.2);
+            color: #34c759;
+        }
+
+        .metric-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        .event-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .event-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .event-time {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .btn-delete-item {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+
+        .btn-delete-item:hover {
+            color: #ff3b30;
+        }
+
+        /* PLANNER INPUTS */
+        .planner-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .planner-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .settings-tabs-menu {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .settings-tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .settings-tab-btn:hover {
+            color: var(--text-primary);
+            background-color: var(--badge-bg);
+        }
+
+        .settings-tab-btn.active {
+            color: var(--text-primary);
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        .settings-tab-content {
+            display: none;
+        }
+
+        .settings-tab-content.active {
+            display: block;
+        }
+
+        .setting-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .setting-option:last-child {
+            border-bottom: none;
+        }
+
+        .theme-btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-theme {
+            background-color: var(--badge-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-theme.active {
+            background-color: var(--text-primary);
+            color: var(--bg-color);
+        }
+
+        /* WŁĄCZNIKI IPHONE (TOGGLE SWITCHES) W KOLORZE MOTYWU */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            appearance: none;
+            background-color: var(--badge-bg);
+            border-radius: 12px;
+            outline: none;
+            cursor: pointer;
+            border: 1px solid var(--card-border);
+            transition: background-color 0.2s ease;
+        }
+
+        .toggle-switch:checked {
+            background-color: var(--toggle-active-bg);
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            background-color: var(--text-secondary);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .toggle-switch:checked::before {
+            transform: translateX(20px);
+            background-color: var(--toggle-active-knob);
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; }
+            sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--card-border); }
+            main { margin-left: 0; padding: 20px; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .card-span-2, .card-span-3 { grid-column: span 1; }
+        }
+    </style>
 </head>
 <body>
 
-  <div class="card">
-    
-    <!-- Krok 0: Powitanie -->
-    <div id="step-0" class="step">
-      <h2>Hej! 👋</h2>
-      <p>Widać, że jesteś tutaj po raz pierwszy!</p>
-      <div class="btn-group">
-        <button onclick="nextStep(1)">Tak, jestem nowy</button>
-        <button class="secondary" onclick="skipCalibration()">Kiedyś używałem tej strony</button>
-      </div>
+    <div class="app-container">
+        <!-- SIDEBAR NAVIGATION -->
+        <sidebar>
+            <div>
+                <div class="brand" onclick="resetToDashboard()">
+                    <div class="brand-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm0 14a5 5 0 1 1 5-5 5 5 0 0 1-5 5z"/></svg>
+                    </div>
+                    <span class="brand-title">SkyPlan</span>
+                </div>
+
+                <ul class="nav-menu">
+                    <li class="nav-item active" data-target="dashboard">
+                        <a onclick="switchView('dashboard', this)">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item" data-target="planner">
+                        <a onclick="switchView('planner', this)">
+                            <svg viewBox="0 0 24 24"><path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM16 2v4M8 2v4M3 10h18"/></svg>
+                            Planner
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item" data-target="settings">
+                    <a onclick="switchView('settings', this)">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Ustawienia
+                    </a>
+                </li>
+            </ul>
+        </sidebar>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main>
+            
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section active">
+                <header>
+                    <div class="header-title">
+                        <h1>Przegląd nieba</h1>
+                        <p>Zaplanuj dzisiejszą sesję obserwacyjną</p>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">
+                                <svg viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                                Warunki dzisiaj
+                            </span>
+                        </div>
+                        <div>
+                            <div class="metric-sub">Oczekiwanie na połączenie...</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">
+                                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                                Faza Księżyca
+                            </span>
+                        </div>
+                        <div>
+                            <div class="metric-sub">Oczekiwanie na połączenie...</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                                Zachód Słońca
+                            </span>
+                        </div>
+                        <div>
+                            <div class="metric-sub">Oczekiwanie na połączenie...</div>
+                        </div>
+                    </div>
+
+                    <div class="card card-span-2">
+                        <div class="card-header">
+                            <span class="card-title">
+                                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Nadchodzące zjawiska
+                            </span>
+                        </div>
+                        <div class="event-list" id="events-list">
+                            <div class="metric-sub">Brak nadchodzących zjawisk do wyświetlenia.</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 1 0 10 7"/></svg>
+                                Obiekt Nocy
+                            </span>
+                        </div>
+                        <div>
+                            <p class="metric-sub">Oczekiwanie na wyznaczenie obiektu...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: PLANNER -->
+            <div id="view-planner" class="view-section">
+                <header>
+                    <div class="header-title">
+                        <h1>Planner Obserwacji</h1>
+                        <p>Zarządzaj harmonogramem i śledź wiadomości kosmiczne</p>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="card card-span-2">
+                        <div class="card-header">
+                            <span class="card-title">Zaplanuj obiekt na dzisiejszą noc</span>
+                        </div>
+                        
+                        <div class="planner-input-group">
+                            <input type="text" id="planner-object-name" class="planner-input" placeholder="Nazwa obiektu (np. Jowisz, M31)">
+                            <input type="text" id="planner-object-time" class="planner-input" style="max-width: 120px;" placeholder="Godzina (np. 22:30)">
+                            <button class="btn-theme" onclick="addPlannerItem()">Dodaj</button>
+                        </div>
+
+                        <div class="event-list" id="planner-session-list"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Lista Sprzętowa</span></div>
+                        <div class="event-list">
+                            <div class="event-item">
+                                <div class="event-info"><h4>Teleskop SW Mak 127</h4></div>
+                                <span class="badge" id="badge-equipment-0" onclick="toggleEquipment(0)">Brak danych</span>
+                            </div>
+                            <div class="event-item">
+                                <div class="event-info"><h4>Montaż SynScan GoTo</h4></div>
+                                <span class="badge" id="badge-equipment-1" onclick="toggleEquipment(1)">Brak danych</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-span-3">
+                        <div class="card-header">
+                            <span class="card-title">Aktualności i Wiadomości Kosmiczne</span>
+                            <button id="btn-refresh-news" class="btn-theme" style="display: none;" onclick="loadSpaceNewsAPI()">Odśwież</button>
+                        </div>
+                        <div class="event-list" id="satellites-api-list">
+                            <div class="event-item">
+                                <div class="event-info">
+                                    <h4>Pobieranie aktualności kosmicznych...</h4>
+                                    <p class="metric-sub">Pobieranie danych z serwera</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: USTAWIENIA -->
+            <div id="view-settings" class="view-section">
+                <header>
+                    <div class="header-title">
+                        <h1>Ustawienia</h1>
+                        <p>Personalizuj motyw, efekty oraz dostosuj powiadomienia</p>
+                    </div>
+                </header>
+
+                <div class="settings-tabs-menu">
+                    <button class="settings-tab-btn active" onclick="switchSettingsTab('motywy', this)">Motywy</button>
+                    <button class="settings-tab-btn" onclick="switchSettingsTab('powiadomienia', this)">Powiadomienia & Alerty</button>
+                    <button class="settings-tab-btn" onclick="switchSettingsTab('zaawansowane', this)">Ustawienia zaawansowane</button>
+                </div>
+
+                <!-- TAB: MOTYWY -->
+                <div id="tab-motywy" class="settings-tab-content active">
+                    <div class="dashboard-grid">
+                        <div class="card card-span-2">
+                            <div class="card-header">
+                                <span class="card-title">Wygląd i Wyświetlanie</span>
+                            </div>
+
+                            <div class="setting-option">
+                                <div>
+                                    <h4>Motyw kolorystyczny</h4>
+                                    <p class="metric-sub">Wybierz schemat barwny dopasowany do pory dnia lub obserwacji</p>
+                                </div>
+                                <div class="theme-btn-group">
+                                    <button class="btn-theme" id="btn-dark" onclick="setTheme('dark')">Ciemny</button>
+                                    <button class="btn-theme" id="btn-light" onclick="setTheme('light')">Jasny</button>
+                                    <button class="btn-theme" id="btn-red" onclick="setTheme('red')">Czerwony (Noc)</button>
+                                </div>
+                            </div>
+
+                            <div class="setting-option">
+                                <div>
+                                    <h4>Efekt Glassmorphic (Blur)</h4>
+                                    <p class="metric-sub">Półprzezroczyste karty i rozmycie tła w stylu Apple iOS</p>
+                                </div>
+                                <input type="checkbox" id="glass-toggle" class="toggle-switch" onchange="toggleGlass(this.checked)">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Pamięć Lokalna</span>
+                            </div>
+                            <div>
+                                <p class="metric-sub" style="margin-bottom: 16px;">Twoje preferencje i wpisy są zapisywane automatycznie w przeglądarce.</p>
+                                <span class="badge badge-success" style="display: inline-block;">Zapisano</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: POWIADOMIENIA & ALERTY -->
+                <div id="tab-powiadomienia" class="settings-tab-content">
+                    <div class="dashboard-grid">
+                        <div class="card card-span-2">
+                            <div class="card-header"><span class="card-title">Powiadomienia i Alerty</span></div>
+                            
+                            <div class="setting-option">
+                                <div>
+                                    <h4>Powiadomienia o nowych artykułach</h4>
+                                    <p class="metric-sub">Otrzymuj wiadomości, gdy pojawią się nowe wpisy</p>
+                                </div>
+                                <input type="checkbox" id="notify-articles" class="toggle-switch" onchange="saveNotificationPref()">
+                            </div>
+
+                            <div class="setting-option">
+                                <div>
+                                    <h4>Raporty i wydarzenia</h4>
+                                    <p class="metric-sub">Alerty o najnowszych wydarzaniach i raportach</p>
+                                </div>
+                                <input type="checkbox" id="notify-reports" class="toggle-switch" onchange="saveNotificationPref()">
+                            </div>
+
+                            <div class="setting-option">
+                                <div>
+                                    <h4>Alerty techniczne</h4>
+                                    <p class="metric-sub">Powiadomienia o błędach w działaniu serwisu</p>
+                                </div>
+                                <input type="checkbox" id="notify-errors" class="toggle-switch" onchange="saveNotificationPref()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ZAAWANSOWANE -->
+                <div id="tab-zaawansowane" class="settings-tab-content">
+                    <div class="dashboard-grid">
+                        <div class="card card-span-3">
+                            <div class="card-header">
+                                <span class="card-title">Ustawienia zaawansowane</span>
+                            </div>
+                            <p class="metric-sub">Brak dodatkowych konfiguracji.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
     </div>
 
-    <!-- Krok 1: GPS -->
-    <div id="step-1" class="step">
-      <h2>Kalibracja miejsca 📍</h2>
-      <p>Czy chciałbyś przejść kalibrację miejsca, w którym obserwujesz?</p>
-      <p><small>Wyjdź w miejsce obserwacji i potwierdź pozycję.</small></p>
-      <div class="btn-group">
-        <button onclick="getGPSAndNext()">Potwierdź lokalizację GPS</button>
-        <button class="secondary" onclick="nextStep(2)">Pomiń ten krok</button>
-      </div>
-      <p id="gps-status" style="font-size: 0.85rem; color: #e3b341; margin-top: 10px;"></p>
-    </div>
+    <script>
+        const API_BASE_URL = 'https://api.spaceflightnewsapi.net';
 
-    <!-- Krok 2: Okrągły Suwak Widoku -->
-    <div id="step-2" class="step">
-      <h2>Pole widzenia 👁️</h2>
-      <p>Ustaw zakres widocznego nieba obracając koło:</p>
-      
-      <div class="dial-container" id="dialContainer">
-        <svg class="dial-svg" viewBox="0 0 100 100">
-          <circle class="dial-bg" cx="50" cy="50" r="40"></circle>
-          <circle class="dial-progress" id="dialProgress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="125.6"></circle>
-        </svg>
-        <div class="dial-center">
-          <div class="dial-value" id="fovVal">180°</div>
-          <div class="dial-label">widoczność</div>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button onclick="saveFOVAndNext()">Zatwierdź pole widzenia</button>
-      </div>
-    </div>
-
-    <!-- Krok 3: Animacja i Kompas -->
-    <div id="step-3" class="step">
-      <h2>Kierunek obserwacji 🧭</h2>
-      <p>Odsłoń telefon od ściany i skieruj go w stronę widocznego nieba:</p>
-      
-      <div class="anim-container">
-        <div class="wall"></div>
-        <div class="phone-wrapper">
-          <div class="phone">
-            <div class="phone-screen">📡</div>
-            <div class="view-beam"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="compass-box">
-        <div class="heading-val" id="headingDisplay">---°</div>
-        <div id="directionText" style="color: var(--text-dim); font-size: 0.9rem;">Oczekiwanie na czujnik...</div>
-      </div>
-
-      <div class="btn-group">
-        <button onclick="requestOrientationPermission()">Włącz czujnik kierunku</button>
-        <button id="finishBtn" class="secondary" onclick="finishCalibration()" style="display:none; border-color: var(--accent-green); color: var(--accent-green);">Zakończ kalibrację</button>
-      </div>
-    </div>
-
-    <!-- Ekran Główny / Podsumowanie Kalibracji -->
-    <div id="step-final" class="step">
-      <h2>Gotowy do obserwacji! 🚀</h2>
-      <p>Twoje ustawienia są zapisane w pamięci przeglądarki:</p>
-      
-      <div id="summary" style="background: #0d1117; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left;"></div>
-
-      <div class="btn-group" style="margin-top: 25px;">
-        <button onclick="startApp()">Przejdź do aplikacji</button>
-        <button class="danger" onclick="resetCalibration()">Wykonaj kalibrację ponownie</button>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    const STORAGE_KEY = 'astro_calibration_data';
-
-    let config = {
-      calibrated: false,
-      location: null,
-      fov: 180,
-      heading: null
-    };
-
-    // SPRAWDZANIE LOCALSTORAGE PRZY STARTOWANIU STRONY
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      
-      if (savedData) {
-        try {
-          config = JSON.parse(savedData);
-          if (config.calibrated) {
-            showSummary();
-            nextStep('final');
-            return;
-          }
-        } catch(e) {
-          console.error("Błąd odczytu localStorage", e);
+        function resetToDashboard() {
+            const dashboardNavItem = document.querySelector('.nav-item[data-target="dashboard"] a');
+            switchView('dashboard', dashboardNavItem);
         }
-      }
-      
-      // Jeśli brak zapisu w localStorage -> zacznij od kroku 0
-      nextStep(0);
-    });
 
-    function nextStep(stepNumber) {
-      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-      document.getElementById('step-' + stepNumber).classList.add('active');
-    }
+        function switchView(viewName, element) {
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('view-' + viewName).classList.add('active');
 
-    function skipCalibration() {
-      config.calibrated = true;
-      saveToLocalStorage();
-      showSummary();
-      nextStep('final');
-    }
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
 
-    // 1. GPS
-    function getGPSAndNext() {
-      const status = document.getElementById('gps-status');
-      if ("geolocation" in navigator) {
-        status.innerText = "Pobieranie pozycji GPS...";
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            config.location = {
-              lat: position.coords.latitude,
-              lon: position.coords.longitude
-            };
-            status.innerText = "Lokalizacja pobrana!";
-            setTimeout(() => nextStep(2), 800);
-          },
-          (error) => {
-            status.innerText = "Brak dostępu do GPS.";
-            setTimeout(() => nextStep(2), 1200);
-          }
-        );
-      } else {
-        nextStep(2);
-      }
-    }
-
-    // 2. OKRĄGŁY SUWAK (LOGIKA OBROTU KOŁA)
-    const dialContainer = document.getElementById('dialContainer');
-    const dialProgress = document.getElementById('dialProgress');
-    const fovValDisplay = document.getElementById('fovVal');
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius; // 251.2
-
-    let isDragging = false;
-
-    function updateDialFromAngle(angleDeg) {
-      let angle = Math.max(30, Math.min(360, angleDeg));
-      config.fov = Math.round(angle);
-      
-      fovValDisplay.innerText = config.fov + '°';
-      const offset = circumference - (angle / 360) * circumference;
-      dialProgress.style.strokeDashoffset = offset;
-    }
-
-    function handleDialMove(e) {
-      const rect = dialContainer.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-      const dx = clientX - centerX;
-      const dy = clientY - centerY;
-
-      let rad = Math.atan2(dy, dx);
-      let deg = rad * (180 / Math.PI) + 90;
-      if (deg < 0) deg += 360;
-
-      updateDialFromAngle(deg);
-    }
-
-    dialContainer.addEventListener('mousedown', (e) => { isDragging = true; handleDialMove(e); });
-    window.addEventListener('mousemove', (e) => { if (isDragging) handleDialMove(e); });
-    window.addEventListener('mouseup', () => { isDragging = false; });
-
-    dialContainer.addEventListener('touchstart', (e) => { isDragging = true; handleDialMove(e); });
-    window.addEventListener('touchmove', (e) => { if (isDragging) handleDialMove(e); });
-    window.addEventListener('touchend', () => { isDragging = false; });
-
-    updateDialFromAngle(180);
-
-    function saveFOVAndNext() {
-      nextStep(3);
-    }
-
-    // 3. CZUJNIK KIERUNKU / KOMPAS
-    function requestOrientationPermission() {
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              window.addEventListener('deviceorientation', handleOrientation);
-            } else {
-              alert('Brak uprawnień do kompasu.');
+            if (element) {
+                const navItem = element.closest ? element.closest('.nav-item') : element.parentElement;
+                if (navItem) navItem.classList.add('active');
             }
-          });
-      } else if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientation', handleOrientation);
-      } else {
-        alert('Czujnik nie jest wspierany na tym urządzeniu.');
-      }
 
-      document.getElementById('finishBtn').style.display = 'block';
-    }
+            if (viewName === 'planner') {
+                loadSpaceNewsAPI();
+            }
+        }
 
-    function handleOrientation(event) {
-      let alpha = event.alpha;
-      if (event.webkitCompassHeading) {
-        alpha = event.webkitCompassHeading;
-      }
+        function switchSettingsTab(tabName, element) {
+            document.querySelectorAll('.settings-tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
 
-      if (alpha !== null) {
-        const heading = Math.round(alpha);
-        config.heading = heading;
-        document.getElementById('headingDisplay').innerText = heading + '°';
-        document.getElementById('directionText').innerText = getDirectionName(heading);
-      }
-    }
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
 
-    function getDirectionName(deg) {
-      if (deg === null) return 'Nie określono';
-      const directions = ['Północ (N)', 'Północny Wschód (NE)', 'Wschód (E)', 'Południowy Wschód (SE)', 'Południe (S)', 'Południowy Zachód (SW)', 'Zachód (W)', 'Północny Zachód (NW)'];
-      const index = Math.round(deg / 45) % 8;
-      return directions[index];
-    }
+            localStorage.setItem('skyplan_active_settings_tab', tabName);
+        }
 
-    // ZAPIS I PODSUMOWANIE
-    function finishCalibration() {
-      config.calibrated = true;
-      saveToLocalStorage();
-      showSummary();
-      nextStep('final');
-    }
+        function setTheme(themeName) {
+            document.body.classList.remove('theme-light', 'theme-red');
+            document.querySelectorAll('.btn-theme').forEach(btn => btn.classList.remove('active'));
 
-    function saveToLocalStorage() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    }
+            if (themeName === 'light') {
+                document.body.classList.add('theme-light');
+                document.getElementById('btn-light').classList.add('active');
+            } else if (themeName === 'red') {
+                document.body.classList.add('theme-red');
+                document.getElementById('btn-red').classList.add('active');
+            } else {
+                document.getElementById('btn-dark').classList.add('active');
+            }
 
-    function showSummary() {
-      const summaryDiv = document.getElementById('summary');
-      summaryDiv.innerHTML = `
-        <p style="margin:5px 0"><strong>GPS:</strong> ${config.location ? config.location.lat.toFixed(4) + ', ' + config.location.lon.toFixed(4) : 'Brak danych'}</p>
-        <p style="margin:5px 0"><strong>Pole widzenia:</strong> ${config.fov}°</p>
-        <p style="margin:5px 0"><strong>Kierunek azymutu:</strong> ${config.heading !== null ? config.heading + '° (' + getDirectionName(config.heading) + ')' : 'Nie wyznaczono'}</p>
-      `;
-    }
+            localStorage.setItem('skyplan_theme', themeName);
+        }
 
-    function resetCalibration() {
-      localStorage.removeItem(STORAGE_KEY);
-      config = { calibrated: false, location: null, fov: 180, heading: null };
-      updateDialFromAngle(180);
-      document.getElementById('headingDisplay').innerText = '---°';
-      document.getElementById('directionText').innerText = 'Oczekiwanie na czujnik...';
-      document.getElementById('finishBtn').style.display = 'none';
-      nextStep(0);
-    }
+        function toggleGlass(enabled) {
+            if (enabled) {
+                document.body.classList.add('has-glass');
+            } else {
+                document.body.classList.remove('has-glass');
+            }
+            localStorage.setItem('skyplan_glass', enabled);
+        }
 
-    function startApp() {
-      alert("Przejście do głównego widoku obserwacyjnego!");
-    }
-  </script>
+        function saveNotificationPref() {
+            const articles = document.getElementById('notify-articles').checked;
+            const reports = document.getElementById('notify-reports').checked;
+            const errors = document.getElementById('notify-errors').checked;
+            localStorage.setItem('skyplan_notify_pref', JSON.stringify({ articles, reports, errors }));
+        }
+
+        /* --- OBSŁUGA LOCAL STORAGE DLA PLANNERA I SPRZĘTU --- */
+
+        let plannerItems = [];
+        let equipmentStatus = [true, true];
+
+        function loadPlannerStorage() {
+            const savedItems = localStorage.getItem('skyplan_planner_items');
+            if (savedItems) {
+                plannerItems = JSON.parse(savedItems);
+            } else {
+                plannerItems = [
+                    { id: Date.now(), title: 'Jowisz + Księżyce Galileuszowe', desc: 'Planowane obserwacje planetarne', time: '22:00' }
+                ];
+                savePlannerStorage();
+            }
+            renderPlannerItems();
+
+            const savedEquipment = localStorage.getItem('skyplan_equipment_status');
+            if (savedEquipment) {
+                equipmentStatus = JSON.parse(savedEquipment);
+            }
+            renderEquipmentStatus();
+        }
+
+        function savePlannerStorage() {
+            localStorage.setItem('skyplan_planner_items', JSON.stringify(plannerItems));
+        }
+
+        function renderPlannerItems() {
+            const list = document.getElementById('planner-session-list');
+            if (!list) return;
+
+            if (plannerItems.length === 0) {
+                list.innerHTML = `<div class="metric-sub">Brak zaplanowanych obiektów na tę noc.</div>`;
+                return;
+            }
+
+            list.innerHTML = plannerItems.map((item, index) => `
+                <div class="event-item">
+                    <div class="event-info">
+                        <h4>${item.title}</h4>
+                        <p>${item.desc}</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="event-time">${item.time}</span>
+                        <button class="btn-delete-item" onclick="deletePlannerItem(${index})">✕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addPlannerItem() {
+            const nameInput = document.getElementById('planner-object-name');
+            const timeInput = document.getElementById('planner-object-time');
+
+            if (!nameInput.value.trim()) return;
+
+            const timeText = timeInput.value.trim() || '22:00';
+            plannerItems.push({
+                id: Date.now(),
+                title: nameInput.value.trim(),
+                desc: 'Zaplanowano do obserwacji',
+                time: timeText
+            });
+
+            savePlannerStorage();
+            renderPlannerItems();
+
+            nameInput.value = '';
+            timeInput.value = '';
+        }
+
+        function deletePlannerItem(index) {
+            plannerItems.splice(index, 1);
+            savePlannerStorage();
+            renderPlannerItems();
+        }
+
+        function toggleEquipment(index) {
+            equipmentStatus[index] = !equipmentStatus[index];
+            localStorage.setItem('skyplan_equipment_status', JSON.stringify(equipmentStatus));
+            renderEquipmentStatus();
+        }
+
+        function renderEquipmentStatus() {
+            equipmentStatus.forEach((status, idx) => {
+                const badge = document.getElementById(`badge-equipment-${idx}`);
+                if (badge) {
+                    badge.textContent = status ? 'Gotowy' : 'Niegotowy';
+                    badge.className = status ? 'badge badge-success' : 'badge badge-error';
+                }
+            });
+        }
+
+        /* --- INTEGRACJA API --- */
+
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(API_BASE_URL + endpoint);
+                if (response.ok) {
+                    return { ok: true, data: await response.json() };
+                } else {
+                    throw new Error("Wystąpił problem z połączeniem.");
+                }
+            } catch (err) {
+                return { ok: false, error: err.message };
+            }
+        }
+
+        function translateTitle(title) {
+            if (!title) return "Aktualności z misji kosmicznej";
+            if (title.includes("Starliner arrive safely back on Earth")) {
+                return "Kapsuła Starliner wylądowała bezpiecznie na Ziemi";
+            }
+            return title;
+        }
+
+        async function loadSpaceNewsAPI() {
+            const container = document.getElementById('satellites-api-list');
+            const refreshBtn = document.getElementById('btn-refresh-news');
+            if (!container) return;
+
+            container.innerHTML = `<div class="event-item"><div class="event-info"><h4>Pobieranie wiadomości...</h4><p class="metric-sub">Pobieranie danych</p></div></div>`;
+
+            const articlesRes = await fetchAPI('/v4/articles/?limit=3');
+            const reportsRes = await fetchAPI('/v4/reports/?limit=1');
+
+            let html = '';
+            let hasError = false;
+
+            if (reportsRes.ok && reportsRes.data && reportsRes.data.results && reportsRes.data.results.length > 0) {
+                const report = reportsRes.data.results[0];
+                const translatedTitle = translateTitle(report.title);
+                html += `
+                    <div class="event-item">
+                        <div class="event-info">
+                            <h4>Raport Misji: ${translatedTitle}</h4>
+                            <p>Źródło: ${report.news_site || 'Wiadomości Kosmiczne'}</p>
+                        </div>
+                        <span class="badge badge-success">Zaktualizowano</span>
+                    </div>`;
+            } else if (!reportsRes.ok) {
+                hasError = true;
+            }
+
+            if (articlesRes.ok && articlesRes.data && articlesRes.data.results) {
+                articlesRes.data.results.forEach(article => {
+                    html += `
+                        <div class="event-item">
+                            <div class="event-info">
+                                <h4>${article.title}</h4>
+                                <p>Źródło: ${article.news_site}</p>
+                            </div>
+                            <div class="event-time">${new Date(article.published_at).toLocaleDateString('pl-PL')}</div>
+                        </div>`;
+                });
+            } else if (!articlesRes.ok) {
+                hasError = true;
+            }
+
+            if (hasError) {
+                html = `
+                    <div class="event-item">
+                        <div class="event-info">
+                            <h4>Nie udało się pobrać wiadomości</h4>
+                            <p class="metric-sub">Sprawdź połączenie z siecią i spróbuj ponownie.</p>
+                        </div>
+                        <span class="badge badge-error">Błąd</span>
+                    </div>`;
+                refreshBtn.style.display = 'inline-block';
+            } else {
+                refreshBtn.style.display = 'none';
+            }
+
+            container.innerHTML = html;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('skyplan_theme') || 'dark';
+            setTheme(savedTheme);
+
+            const savedGlass = localStorage.getItem('skyplan_glass');
+            const glassEnabled = savedGlass !== null ? (savedGlass === 'true') : false;
+            
+            document.getElementById('glass-toggle').checked = glassEnabled;
+            toggleGlass(glassEnabled);
+
+            const savedTab = localStorage.getItem('skyplan_active_settings_tab');
+            if (savedTab && document.getElementById('tab-' + savedTab)) {
+                const targetBtn = document.querySelector(`.settings-tab-btn[onclick*="${savedTab}"]`);
+                if (targetBtn) switchSettingsTab(savedTab, targetBtn);
+            }
+
+            const savedNotify = localStorage.getItem('skyplan_notify_pref');
+            if (savedNotify) {
+                const prefs = JSON.parse(savedNotify);
+                document.getElementById('notify-articles').checked = prefs.articles;
+                document.getElementById('notify-reports').checked = prefs.reports;
+                document.getElementById('notify-errors').checked = prefs.errors;
+            } else {
+                document.getElementById('notify-articles').checked = false;
+                document.getElementById('notify-reports').checked = false;
+                document.getElementById('notify-errors').checked = false;
+            }
+
+            loadPlannerStorage();
+        });
+    </script>
 </body>
 </html>

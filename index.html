@@ -347,38 +347,6 @@
             outline: none;
         }
 
-        .settings-tabs-menu {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 12px;
-            overflow-x: auto;
-        }
-
-        .settings-tab-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .settings-tab-btn:hover {
-            color: var(--text-primary);
-            background-color: var(--badge-bg);
-        }
-
-        .settings-tab-btn.active {
-            color: var(--text-primary);
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-        }
-
         .settings-tab-content {
             display: none;
         }
@@ -455,6 +423,88 @@
             background-color: var(--toggle-active-knob);
         }
 
+        /* STYLE DLA SAMOUCZKA */
+        .tutorial-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .tutorial-modal-card {
+            background-color: rgba(28, 28, 30, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .tutorial-step-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .tutorial-step-body {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .tutorial-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-tutorial {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--card-border);
+            background-color: var(--badge-bg);
+            color: var(--text-primary);
+        }
+
+        .btn-tutorial-primary {
+            background-color: var(--text-primary);
+            color: var(--bg-color);
+        }
+
+        .tutorial-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .tutorial-select {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            outline: none;
+        }
+
         @media (max-width: 900px) {
             .app-container { flex-direction: column; }
             sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--card-border); }
@@ -466,13 +516,22 @@
 </head>
 <body>
 
+    <!-- MODAL SAMOUCZKA -->
+    <div id="tutorial-modal" class="tutorial-modal-overlay" style="display: none;">
+        <div class="tutorial-modal-card">
+            <div id="tutorial-step-title" class="tutorial-step-title"></div>
+            <div id="tutorial-step-body" class="tutorial-step-body"></div>
+            <div id="tutorial-actions" class="tutorial-actions"></div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- SIDEBAR NAVIGATION -->
         <sidebar>
             <div>
                 <div class="brand" onclick="resetToDashboard()">
                     <div class="brand-icon">
-                        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm0 14a5 5 0 1 1 5-5 5 5 0 0 1-5 5z"/></svg>
+                        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 9 0 0 0-9-9zm0 14a5 5 0 1 1 5-5 5 5 0 0 1-5 5z"/></svg>
                     </div>
                     <span class="brand-title">SkyPlan</span>
                 </div>
@@ -652,6 +711,177 @@
 
     <script>
         const API_BASE_URL = 'https://api.spaceflightnewsapi.net';
+
+        /* --- LOGIKA SAMOUCZKA (ONBOARDING) --- */
+        let tutorialLanguage = 'en'; // Domyślnie angielski do momentu wyboru języka
+
+        function checkTutorial() {
+            const finished = localStorage.getItem('skyplan_tutorial_finished');
+            if (!finished) {
+                document.getElementById('tutorial-modal').style.display = 'flex';
+                renderTutorialStep(0);
+            }
+        }
+
+        function renderTutorialStep(step) {
+            const title = document.getElementById('tutorial-step-title');
+            const body = document.getElementById('tutorial-step-body');
+            const actions = document.getElementById('tutorial-actions');
+
+            if (step === 0) {
+                title.innerText = tutorialLanguage === 'en' ? "Welcome to SkyPlan!" : "Hej! Witaj w SkyPlan!";
+                body.innerText = tutorialLanguage === 'en' 
+                    ? "It looks like you are here for the first time. Would you like to start the tour from the beginning or have you used our app before?"
+                    : "Hej! Witaj w SkyPlan! Wygląda na to, że jesteś tutaj po raz pierwszy. Chcesz rozpocząć przygodę ze SkyPlan od początku, czy korzystałeś już wcześniej z naszej aplikacji?";
+                actions.innerHTML = `
+                    <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(1)">${tutorialLanguage === 'en' ? 'New user' : 'Nowy'}</button>
+                    <button class="btn-tutorial" onclick="finishTutorial()">${tutorialLanguage === 'en' ? 'Used before' : 'Korzystałem wcześniej'}</button>
+                `;
+            } else if (step === 1) {
+                title.innerText = tutorialLanguage === 'en' ? "1. Introduction" : "1. Okej!";
+                body.innerText = tutorialLanguage === 'en'
+                    ? "1. Okay! In that case, I will ask you a few short questions to better match SkyPlan to your needs."
+                    : "1 Okej! W takim razie zadam Ci kilka krótkich pytań, aby lepiej dopasować SkyPlan do Twoich potrzeb.";
+                actions.innerHTML = `
+                    <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(2)">${tutorialLanguage === 'en' ? 'Next' : 'Dalej'}</button>
+                `;
+            } else if (step === 2) {
+                title.innerText = tutorialLanguage === 'en' ? "2. Setup Data" : "2. Dane";
+                body.innerHTML = `
+                    ${tutorialLanguage === 'en' ? '2. Fill in the data below to ensure proper application performance.' : '2 Uzupełnij poniższe dane, aby zapewnić prawidłowe działanie aplikacji.'}
+                    <div class="tutorial-input-group">
+                        <label style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Language / Język:' : 'Język / Language:'}</label>
+                        <select id="tut-lang-select" class="tutorial-select" onchange="tutorialLanguage = this.value; renderTutorialStep(2);">
+                            <option value="en" ${tutorialLanguage === 'en' ? 'selected' : ''}>English</option>
+                            <option value="pl" ${tutorialLanguage === 'pl' ? 'selected' : ''}>Polski</option>
+                        </select>
+
+                        <label style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Distance unit:' : 'Jednostki:'}</label>
+                        <select id="tut-units" class="tutorial-select">
+                            <option value="km">km</option>
+                            <option value="mile">mile</option>
+                        </select>
+
+                        <label style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Time format:' : 'Format czasu:'}</label>
+                        <select id="tut-timeformat" class="tutorial-select">
+                            <option value="24h">24h</option>
+                            <option value="12h">12h</option>
+                        </select>
+                    </div>
+                `;
+                actions.innerHTML = `
+                    <button class="btn-tutorial btn-tutorial-primary" onclick="saveStep2Data(); renderTutorialStep(3);">${tutorialLanguage === 'en' ? 'Save & Next' : 'Zapisz i dalej'}</button>
+                `;
+            } else if (step === 3) {
+                title.innerText = tutorialLanguage === 'en' ? "3. Observation Spot" : "3. Kalibracja miejsca";
+                body.innerText = tutorialLanguage === 'en'
+                    ? "3. Okay! Now let's calibrate your observation spot. Can you go to the place where you usually observe the night sky?"
+                    : "3 Okej! Teraz skalibrujmy Twoje miejsce obserwacji. Czy możesz udać się do miejsca, z którego zwykle obserwujesz nocne niebo?";
+                actions.innerHTML = `
+                    <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(4)">${tutorialLanguage === 'en' ? 'I am there' : 'Jestem na miejscu'}</button>
+                `;
+            } else if (step === 4) {
+                title.innerText = tutorialLanguage === 'en' ? "4. Orientation Calibration" : "4. Kalibracja ściany / pola widzenia";
+                body.innerHTML = `
+                    <p style="margin-bottom:10px;">${tutorialLanguage === 'en' 
+                        ? '4. If you are on a balcony or near a wall, place the back of your phone against the wall. Then click "Start" to begin calibration.' 
+                        : '4 Jeśli znajdujesz się na balkonie lub w pobliżu ściany, przyłóż tylną część telefonu do ściany. Następnie kliknij przycisk „Start”, aby rozpocząć kalibrację.'}</p>
+                    <p>${tutorialLanguage === 'en' 
+                        ? 'If you do not have a wall nearby or have a full 360° view, click "I do not have a wall nearby".' 
+                        : 'Jeśli nie masz w pobliżu ściany lub masz pełny widok 360°, kliknij przycisk „Nie mam ściany w pobliżu”.'}</p>
+                    <div id="calibration-interactive-area" style="margin-top:12px;"></div>
+                `;
+                actions.innerHTML = `
+                    <button class="btn-tutorial btn-tutorial-primary" onclick="startDeviceWallCalibration()">${tutorialLanguage === 'en' ? 'Start (Wall)' : 'Start (Ze ścianą)'}</button>
+                    <button class="btn-tutorial" onclick="showNoWallSlider()">${tutorialLanguage === 'en' ? 'I do not have a wall nearby' : 'Nie mam ściany w pobliżu'}</button>
+                `;
+            } else if (step === 5) {
+                title.innerText = tutorialLanguage === 'en' ? "5. Thank you!" : "5. Dziękujemy!";
+                body.innerHTML = tutorialLanguage === 'en'
+                    ? `5. Thank you for using SkyPlan!<br>If you want to discover even more features and join our community, welcome to our Discord:<br><br><b>Link: https://discord.gg/skyplan</b>`
+                    : `5 Dziękujemy, że korzystasz ze SkyPlan!<br>Jeśli chcesz odkryć jeszcze więcej możliwości i dołączyć do naszej społeczności, zapraszamy na naszego Discorda:<br><br><b>Link: https://discord.gg/skyplan</b>`;
+                actions.innerHTML = `
+                    <button class="btn-tutorial btn-tutorial-primary" onclick="requestFinalGPSAndComplete()">${tutorialLanguage === 'en' ? 'Finish Setup' : 'Zakończ samouczek'}</button>
+                `;
+            }
+        }
+
+        function saveStep2Data() {
+            const units = document.getElementById('tut-units') ? document.getElementById('tut-units').value : 'km';
+            const tf = document.getElementById('tut-timeformat') ? document.getElementById('tut-timeformat').value : '24h';
+            
+            localStorage.setItem('skyplan_user_lang', tutorialLanguage);
+            localStorage.setItem('skyplan_user_units', units);
+            localStorage.setItem('skyplan_user_tf', tf);
+        }
+
+        function startDeviceWallCalibration() {
+            const area = document.getElementById('calibration-interactive-area');
+            area.innerHTML = `<p style="color:#34c759;">${tutorialLanguage === 'en' ? 'Reading compass sensors...' : 'Pobieranie danych z czujnika...'}</p>`;
+
+            if (window.DeviceOrientationEvent) {
+                const handler = function(e) {
+                    let heading = e.alpha || e.webkitCompassHeading;
+                    if (heading !== undefined && heading !== null) {
+                        let reversedHeading = (heading + 180) % 360;
+                        localStorage.setItem('skyplan_balcony_heading', Math.round(reversedHeading));
+                        window.removeEventListener('deviceorientation', handler);
+                        area.innerHTML = `<p style="color:#34c759;">${tutorialLanguage === 'en' ? 'Calibration saved!' : 'Kalibracja zapisana!'}</p>`;
+                        setTimeout(() => renderTutorialStep(5), 1200);
+                    }
+                };
+                window.addEventListener('deviceorientation', handler, true);
+                
+                setTimeout(() => {
+                    if (!localStorage.getItem('skyplan_balcony_heading')) {
+                        localStorage.setItem('skyplan_balcony_heading', 180);
+                        renderTutorialStep(5);
+                    }
+                }, 2000);
+            } else {
+                localStorage.setItem('skyplan_balcony_heading', 180);
+                renderTutorialStep(5);
+            }
+        }
+
+        function showNoWallSlider() {
+            const area = document.getElementById('calibration-interactive-area');
+            const actions = document.getElementById('tutorial-actions');
+
+            area.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <label style="font-size:13px;">${tutorialLanguage === 'en' ? 'Field of view degrees:' : 'Kąt widoku (stopnie):'} <b id="slider-deg-val">180°</b></label>
+                    <input type="range" min="30" max="360" value="180" style="width:100%;" oninput="document.getElementById('slider-deg-val').innerText = this.value + '°'; localStorage.setItem('skyplan_view_fov', this.value);">
+                </div>
+            `;
+
+            actions.innerHTML = `
+                <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(5)">${tutorialLanguage === 'en' ? 'Confirm' : 'Potwierdź'}</button>
+            `;
+        }
+
+        function requestFinalGPSAndComplete() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        localStorage.setItem('skyplan_gps_lat', pos.coords.latitude);
+                        localStorage.setItem('skyplan_gps_lng', pos.coords.longitude);
+                        finishTutorial();
+                        loadSkyData();
+                    },
+                    (err) => {
+                        finishTutorial();
+                    }
+                );
+            } else {
+                finishTutorial();
+            }
+        }
+
+        function finishTutorial() {
+            localStorage.setItem('skyplan_tutorial_finished', 'true');
+            document.getElementById('tutorial-modal').style.display = 'none';
+        }
 
         function resetToDashboard() {
             const dashboardNavItem = document.querySelector('.nav-item[data-target="dashboard"] a');
@@ -857,8 +1087,8 @@
         }
 
         async function loadSkyData() {
-            const lat = 52.34;
-            const lng = 21.19;
+            const lat = localStorage.getItem('skyplan_gps_lat') || 52.34;
+            const lng = localStorage.getItem('skyplan_gps_lng') || 21.19;
 
             const moonTranslations = {
                 'New Moon': 'Nów',
@@ -942,6 +1172,9 @@
 
             loadPlannerStorage();
             loadSkyData();
+
+            // Inicjalizacja sprawdzania samouczka
+            checkTutorial();
         });
     </script>
 </body>

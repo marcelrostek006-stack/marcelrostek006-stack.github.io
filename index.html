@@ -347,6 +347,31 @@
             outline: none;
         }
 
+        /* NAWIGACJA ZAKŁADEK W USTAWIENIACH */
+        .settings-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+        }
+
+        .settings-nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .settings-nav-btn.active {
+            background-color: var(--badge-bg);
+            color: var(--text-primary);
+        }
+
         .settings-tab-content {
             display: none;
         }
@@ -388,7 +413,7 @@
             color: var(--bg-color);
         }
 
-        /* WŁĄCZNIKI IPHONE (TOGGLE SWITCHES) W KOLORZE MOTYWU */
+        /* WŁĄCZNIKI IPHONE (TOGGLE SWITCHES) */
         .toggle-switch {
             position: relative;
             width: 44px;
@@ -423,7 +448,7 @@
             background-color: var(--toggle-active-knob);
         }
 
-        /* STYLE DLA SAMOUCZKA */
+        /* MODAL SAMOUCZKA */
         .tutorial-modal-overlay {
             position: fixed;
             top: 0;
@@ -503,6 +528,28 @@
             border: 1px solid var(--card-border);
             color: var(--text-primary);
             outline: none;
+        }
+
+        .compass-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .compass-degree {
+            font-size: 32px;
+            font-weight: 700;
+            color: #34c759;
+            margin: 8px 0;
+        }
+
+        .compass-direction {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
         }
 
         @media (max-width: 900px) {
@@ -659,9 +706,15 @@
                 <header>
                     <div class="header-title">
                         <h1>Ustawienia</h1>
-                        <p>Personalizuj motyw oraz efekty wizualne</p>
+                        <p>Personalizuj motyw, oglądaj zapisane dane oraz konfiguruj aplikację</p>
                     </div>
                 </header>
+
+                <!-- PODZIAŁ NA PODZAKŁADKI MOTYW / KONTO -->
+                <div class="settings-nav">
+                    <button class="settings-nav-btn active" onclick="switchSettingsTab('motywy', this)">Motyw</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('konto', this)">Konto</button>
+                </div>
 
                 <!-- TAB: MOTYWY -->
                 <div id="tab-motywy" class="settings-tab-content active">
@@ -704,6 +757,22 @@
                     </div>
                 </div>
 
+                <!-- TAB: KONTO / ZAPISANE DANE -->
+                <div id="tab-konto" class="settings-tab-content">
+                    <div class="dashboard-grid">
+                        <div class="card card-span-3">
+                            <div class="card-header">
+                                <span class="card-title">Profil i Zapisane Wyniki Kalibracji</span>
+                                <button class="btn-theme" onclick="resetTutorialAndSettings()">Uruchom samouczek ponownie</button>
+                            </div>
+                            
+                            <div class="event-list" id="account-data-list">
+                                <!-- Wyniki będą wstawiane automatycznie przez JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </main>
@@ -713,7 +782,9 @@
         const API_BASE_URL = 'https://api.spaceflightnewsapi.net';
 
         /* --- LOGIKA SAMOUCZKA (ONBOARDING) --- */
-        let tutorialLanguage = 'en'; // Domyślnie angielski do momentu wyboru języka
+        let tutorialLanguage = 'en';
+        let orientationListener = null;
+        let currentCalculatedSkyHeading = 180;
 
         function checkTutorial() {
             const finished = localStorage.getItem('skyplan_tutorial_finished');
@@ -723,7 +794,17 @@
             }
         }
 
+        function getCompassCardinal(deg) {
+            const directions = ['N (Północ)', 'NE (Północny Wschód)', 'E (Wschód)', 'SE (Południowy Wschód)', 'S (Południe)', 'SW (Południowy Zachód)', 'W (Zachód)', 'NW (Północny Zachód)'];
+            return directions[Math.round(deg / 45) % 8];
+        }
+
         function renderTutorialStep(step) {
+            if (orientationListener) {
+                window.removeEventListener('deviceorientation', orientationListener, true);
+                orientationListener = null;
+            }
+
             const title = document.getElementById('tutorial-step-title');
             const body = document.getElementById('tutorial-step-body');
             const actions = document.getElementById('tutorial-actions');
@@ -784,8 +865,8 @@
                 title.innerText = tutorialLanguage === 'en' ? "4. Orientation Calibration" : "4. Kalibracja ściany / pola widzenia";
                 body.innerHTML = `
                     <p style="margin-bottom:10px;">${tutorialLanguage === 'en' 
-                        ? '4. If you are on a balcony or near a wall, place the back of your phone against the wall. Then click "Start" to begin calibration.' 
-                        : '4 Jeśli znajdujesz się na balkonie lub w pobliżu ściany, przyłóż tylną część telefonu do ściany. Następnie kliknij przycisk „Start”, aby rozpocząć kalibrację.'}</p>
+                        ? '4. If you are on a balcony or near a wall, place the back of your phone flat against the wall. Then click "Start" to begin live sensor reading.' 
+                        : '4 Jeśli znajdujesz się na balkonie lub w pobliżu ściany, przyłóż tył telefonu płasko do ściany. Następnie kliknij „Start”, aby rozpocząć odczyt żyroskopu.'}</p>
                     <p>${tutorialLanguage === 'en' 
                         ? 'If you do not have a wall nearby or have a full 360° view, click "I do not have a wall nearby".' 
                         : 'Jeśli nie masz w pobliżu ściany lub masz pełny widok 360°, kliknij przycisk „Nie mam ściany w pobliżu”.'}</p>
@@ -817,31 +898,64 @@
 
         function startDeviceWallCalibration() {
             const area = document.getElementById('calibration-interactive-area');
-            area.innerHTML = `<p style="color:#34c759;">${tutorialLanguage === 'en' ? 'Reading compass sensors...' : 'Pobieranie danych z czujnika...'}</p>`;
+            const actions = document.getElementById('tutorial-actions');
 
-            if (window.DeviceOrientationEvent) {
-                const handler = function(e) {
-                    let heading = e.alpha || e.webkitCompassHeading;
-                    if (heading !== undefined && heading !== null) {
-                        let reversedHeading = (heading + 180) % 360;
-                        localStorage.setItem('skyplan_balcony_heading', Math.round(reversedHeading));
-                        window.removeEventListener('deviceorientation', handler);
-                        area.innerHTML = `<p style="color:#34c759;">${tutorialLanguage === 'en' ? 'Calibration saved!' : 'Kalibracja zapisana!'}</p>`;
-                        setTimeout(() => renderTutorialStep(5), 1200);
-                    }
-                };
-                window.addEventListener('deviceorientation', handler, true);
-                
-                setTimeout(() => {
-                    if (!localStorage.getItem('skyplan_balcony_heading')) {
-                        localStorage.setItem('skyplan_balcony_heading', 180);
-                        renderTutorialStep(5);
-                    }
-                }, 2000);
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            bindRealCompassSensors(area, actions);
+                        } else {
+                            area.innerHTML = `<p style="color:#ff3b30;">${tutorialLanguage === 'en' ? 'Permission to orientation sensor denied.' : 'Brak dostępu do czujników ruchu.'}</p>`;
+                        }
+                    })
+                    .catch(console.error);
+            } else if (window.DeviceOrientationEvent) {
+                bindRealCompassSensors(area, actions);
             } else {
-                localStorage.setItem('skyplan_balcony_heading', 180);
-                renderTutorialStep(5);
+                area.innerHTML = `<p style="color:#ff3b30;">${tutorialLanguage === 'en' ? 'Device orientation not supported.' : 'Twoja przeglądarka nie obsługuje czujników kompasu.'}</p>`;
             }
+        }
+
+        function bindRealCompassSensors(area, actions) {
+            area.innerHTML = `
+                <div class="compass-box">
+                    <div style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Kierunek widoku na niebo:' : 'Kierunek widoku na niebo:'}</div>
+                    <div class="compass-degree" id="live-deg-display">---°</div>
+                    <div class="compass-direction" id="live-cardinal-display">---</div>
+                </div>
+            `;
+
+            actions.innerHTML = `
+                <button class="btn-tutorial btn-tutorial-primary" onclick="confirmWallCalibration()">${tutorialLanguage === 'en' ? 'Save position' : 'Zapisz ten kierunek'}</button>
+            `;
+
+            orientationListener = function(e) {
+                let wallHeading = null;
+
+                if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+                    wallHeading = e.webkitCompassHeading;
+                } else if (e.alpha !== undefined && e.alpha !== null) {
+                    wallHeading = 360 - e.alpha;
+                }
+
+                if (wallHeading !== null) {
+                    currentCalculatedSkyHeading = Math.round((wallHeading + 180) % 360);
+                    
+                    const degDisp = document.getElementById('live-deg-display');
+                    const cardDisp = document.getElementById('live-cardinal-display');
+
+                    if (degDisp) degDisp.innerText = `${currentCalculatedSkyHeading}°`;
+                    if (cardDisp) cardDisp.innerText = getCompassCardinal(currentCalculatedSkyHeading);
+                }
+            };
+
+            window.addEventListener('deviceorientation', orientationListener, true);
+        }
+
+        function confirmWallCalibration() {
+            localStorage.setItem('skyplan_balcony_heading', currentCalculatedSkyHeading);
+            renderTutorialStep(5);
         }
 
         function showNoWallSlider() {
@@ -881,6 +995,88 @@
         function finishTutorial() {
             localStorage.setItem('skyplan_tutorial_finished', 'true');
             document.getElementById('tutorial-modal').style.display = 'none';
+            renderAccountData();
+        }
+
+        /* --- ZARZĄDZANIE ZAKŁADKAMI W USTAWIENIACH --- */
+
+        function switchSettingsTab(tabName, btnElement) {
+            document.querySelectorAll('.settings-tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if (btnElement) btnElement.classList.add('active');
+
+            if (tabName === 'konto') {
+                renderAccountData();
+            }
+        }
+
+        /* RENDEROOWANIE DANYCH KONTA Z LOCALSTORAGE */
+        function renderAccountData() {
+            const container = document.getElementById('account-data-list');
+            if (!container) return;
+
+            const lang = localStorage.getItem('skyplan_user_lang') || 'Brak danych (Domyślnie PL)';
+            const units = localStorage.getItem('skyplan_user_units') || 'km';
+            const timeFormat = localStorage.getItem('skyplan_user_tf') || '24h';
+            const balconyHeading = localStorage.getItem('skyplan_balcony_heading');
+            const fov = localStorage.getItem('skyplan_view_fov');
+            const lat = localStorage.getItem('skyplan_gps_lat');
+            const lng = localStorage.getItem('skyplan_gps_lng');
+            const theme = localStorage.getItem('skyplan_theme') || 'dark';
+
+            let headingText = 'Brak kalibracji ściany';
+            if (balconyHeading !== null) {
+                headingText = `${balconyHeading}° (${getCompassCardinal(parseInt(balconyHeading))})`;
+            } else if (fov !== null) {
+                headingText = `Widok bez ściany (${fov}°)`;
+            }
+
+            let gpsText = (lat && lng) ? `${parseFloat(lat).toFixed(4)}°, ${parseFloat(lng).toFixed(4)}°` : 'Nie ustawiono (Domyślnie 52.34°, 21.19°)';
+
+            container.innerHTML = `
+                <div class="event-item">
+                    <div class="event-info">
+                        <h4>Język aplikacji</h4>
+                        <p>${lang === 'en' ? 'English' : 'Polski'}</p>
+                    </div>
+                    <span class="badge">${lang.toUpperCase()}</span>
+                </div>
+                <div class="event-item">
+                    <div class="event-info">
+                        <h4>Preferowane Jednostki</h4>
+                        <p>Odległość: ${units} | Format czasu: ${timeFormat}</p>
+                    </div>
+                    <span class="badge">${units}</span>
+                </div>
+                <div class="event-item">
+                    <div class="event-info">
+                        <h4>Wynik kalibracji ściany / pola widzenia</h4>
+                        <p>Kierunek nieba: ${headingText}</p>
+                    </div>
+                    <span class="badge badge-success">Kalibracja Zapisana</span>
+                </div>
+                <div class="event-item">
+                    <div class="event-info">
+                        <h4>Współrzędne Obserwacyjne GPS</h4>
+                        <p>${gpsText}</p>
+                    </div>
+                    <span class="badge">${lat ? 'GPS Aktywny' : 'Domyślne'}</span>
+                </div>
+                <div class="event-item">
+                    <div class="event-info">
+                        <h4>Aktywny Motyw Interfejsu</h4>
+                        <p>${theme.toUpperCase()}</p>
+                    </div>
+                    <span class="badge">${theme}</span>
+                </div>
+            `;
+        }
+
+        function resetTutorialAndSettings() {
+            localStorage.removeItem('skyplan_tutorial_finished');
+            checkTutorial();
         }
 
         function resetToDashboard() {
@@ -905,6 +1101,8 @@
 
             if (viewName === 'planner') {
                 loadSpaceNewsAPI();
+            } else if (viewName === 'settings') {
+                renderAccountData();
             }
         }
 
@@ -1101,7 +1299,6 @@
                 'Waning Crescent': 'Sierp ubywający'
             };
 
-            // Pobieranie zachmurzenia z Open-Meteo API
             try {
                 const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=cloud_cover&hourly=cloud_cover&forecast_days=1`);
                 const weatherData = await weatherRes.json();
@@ -1142,14 +1339,12 @@
                 if (result.status === "OK" && result.results) {
                     const data = result.results;
 
-                    // Faza Księżyca
                     const moonElement = document.getElementById('card-moon');
                     if (moonElement) {
                         const phasePL = moonTranslations[data.moon_phase] || data.moon_phase;
                         moonElement.innerHTML = `<strong style="font-size: 20px; color: var(--text-primary);">${data.moon_illumination}%</strong><br>Faza: ${phasePL}`;
                     }
 
-                    // Zachód Słońca
                     const sunsetElement = document.getElementById('card-sunset');
                     if (sunsetElement) {
                         sunsetElement.innerHTML = `<strong style="font-size: 20px; color: var(--text-primary);">${data.sunset}</strong><br>Zmierzch astron.: ${data.astronomical_twilight_end}`;
@@ -1172,8 +1367,6 @@
 
             loadPlannerStorage();
             loadSkyData();
-
-            // Inicjalizacja sprawdzania samouczka
             checkTutorial();
         });
     </script>

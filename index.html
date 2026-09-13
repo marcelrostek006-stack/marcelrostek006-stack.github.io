@@ -551,30 +551,6 @@
                             <div class="metric-sub" id="card-sunset">Oczekiwanie na połączenie...</div>
                         </div>
                     </div>
-
-                    <div class="card card-span-2">
-                        <div class="card-header">
-                            <span class="card-title">
-                                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                Nadchodzące zjawiska
-                            </span>
-                        </div>
-                        <div class="event-list" id="events-list">
-                            <div class="metric-sub">Brak nadchodzących zjawisk do wyświetlenia.</div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">
-                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 1 0 10 7"/></svg>
-                                Obiekt Nocy
-                            </span>
-                        </div>
-                        <div>
-                            <p class="metric-sub">Oczekiwanie na wyznaczenie obiektu...</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -624,15 +600,9 @@
                 <header>
                     <div class="header-title">
                         <h1>Ustawienia</h1>
-                        <p>Personalizuj motyw, efekty oraz dostosuj powiadomienia</p>
+                        <p>Personalizuj motyw oraz efekty wizualne</p>
                     </div>
                 </header>
-
-                <div class="settings-tabs-menu">
-                    <button class="settings-tab-btn active" onclick="switchSettingsTab('motywy', this)">Motywy</button>
-                    <button class="settings-tab-btn" onclick="switchSettingsTab('powiadomienia', this)">Powiadomienia & Alerty</button>
-                    <button class="settings-tab-btn" onclick="switchSettingsTab('zaawansowane', this)">Ustawienia zaawansowane</button>
-                </div>
 
                 <!-- TAB: MOTYWY -->
                 <div id="tab-motywy" class="settings-tab-content active">
@@ -675,51 +645,6 @@
                     </div>
                 </div>
 
-                <!-- TAB: POWIADOMIENIA & ALERTY -->
-                <div id="tab-powiadomienia" class="settings-tab-content">
-                    <div class="dashboard-grid">
-                        <div class="card card-span-2">
-                            <div class="card-header"><span class="card-title">Powiadomienia i Alerty</span></div>
-                            
-                            <div class="setting-option">
-                                <div>
-                                    <h4>Powiadomienia o nowych artykułach</h4>
-                                    <p class="metric-sub">Otrzymuj wiadomości, gdy pojawią się nowe wpisy</p>
-                                </div>
-                                <input type="checkbox" id="notify-articles" class="toggle-switch" onchange="saveNotificationPref()">
-                            </div>
-
-                            <div class="setting-option">
-                                <div>
-                                    <h4>Raporty i wydarzenia</h4>
-                                    <p class="metric-sub">Alerty o najnowszych wydarzaniach i raportach</p>
-                                </div>
-                                <input type="checkbox" id="notify-reports" class="toggle-switch" onchange="saveNotificationPref()">
-                            </div>
-
-                            <div class="setting-option">
-                                <div>
-                                    <h4>Alerty techniczne</h4>
-                                    <p class="metric-sub">Powiadomienia o błędach w działaniu serwisu</p>
-                                </div>
-                                <input type="checkbox" id="notify-errors" class="toggle-switch" onchange="saveNotificationPref()">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: ZAAWANSOWANE -->
-                <div id="tab-zaawansowane" class="settings-tab-content">
-                    <div class="dashboard-grid">
-                        <div class="card card-span-3">
-                            <div class="card-header">
-                                <span class="card-title">Ustawienia zaawansowane</span>
-                            </div>
-                            <p class="metric-sub">Brak dodatkowych konfiguracji.</p>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
         </main>
@@ -753,16 +678,6 @@
             }
         }
 
-        function switchSettingsTab(tabName, element) {
-            document.querySelectorAll('.settings-tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-
-            document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
-
-            localStorage.setItem('skyplan_active_settings_tab', tabName);
-        }
-
         function setTheme(themeName) {
             document.body.classList.remove('theme-light', 'theme-red');
             document.querySelectorAll('.btn-theme').forEach(btn => btn.classList.remove('active'));
@@ -787,13 +702,6 @@
                 document.body.classList.remove('has-glass');
             }
             localStorage.setItem('skyplan_glass', enabled);
-        }
-
-        function saveNotificationPref() {
-            const articles = document.getElementById('notify-articles').checked;
-            const reports = document.getElementById('notify-reports').checked;
-            const errors = document.getElementById('notify-errors').checked;
-            localStorage.setItem('skyplan_notify_pref', JSON.stringify({ articles, reports, errors }));
         }
 
         /* --- OBSŁUGA LOCAL STORAGE DLA PLANNERA --- */
@@ -1031,24 +939,6 @@
             
             document.getElementById('glass-toggle').checked = glassEnabled;
             toggleGlass(glassEnabled);
-
-            const savedTab = localStorage.getItem('skyplan_active_settings_tab');
-            if (savedTab && document.getElementById('tab-' + savedTab)) {
-                const targetBtn = document.querySelector(`.settings-tab-btn[onclick*="${savedTab}"]`);
-                if (targetBtn) switchSettingsTab(savedTab, targetBtn);
-            }
-
-            const savedNotify = localStorage.getItem('skyplan_notify_pref');
-            if (savedNotify) {
-                const prefs = JSON.parse(savedNotify);
-                document.getElementById('notify-articles').checked = prefs.articles;
-                document.getElementById('notify-reports').checked = prefs.reports;
-                document.getElementById('notify-errors').checked = prefs.errors;
-            } else {
-                document.getElementById('notify-articles').checked = false;
-                document.getElementById('notify-reports').checked = false;
-                document.getElementById('notify-errors').checked = false;
-            }
 
             loadPlannerStorage();
             loadSkyData();

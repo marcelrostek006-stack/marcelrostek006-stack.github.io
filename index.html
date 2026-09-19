@@ -1,1374 +1,165 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPlan — Astronomia & Planowanie</title>
-    <style>
-        /* RESET & BASE STYLES */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-
-        /* PALETY KOLORÓW (THEMES) */
-        :root {
-            --bg-color: #000000;
-            --sidebar-bg: rgba(18, 18, 18, 0.8);
-            --card-bg: rgba(28, 28, 30, 0.65);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --card-hover: rgba(44, 44, 46, 0.8);
-            --text-primary: #ffffff;
-            --text-secondary: #8e8e93;
-            --badge-bg: rgba(255, 255, 255, 0.1);
-            --toggle-active-bg: #ffffff;
-            --toggle-active-knob: #000000;
-            --blur-val: none;
-        }
-
-        body.theme-light {
-            --bg-color: #f2f2f7;
-            --sidebar-bg: rgba(255, 255, 255, 0.8);
-            --card-bg: rgba(255, 255, 255, 0.7);
-            --card-border: rgba(0, 0, 0, 0.08);
-            --card-hover: rgba(255, 255, 255, 0.95);
-            --text-primary: #000000;
-            --text-secondary: #6c6c70;
-            --badge-bg: rgba(0, 0, 0, 0.06);
-            --toggle-active-bg: #000000;
-            --toggle-active-knob: #ffffff;
-        }
-
-        body.theme-red {
-            --bg-color: #050000;
-            --sidebar-bg: rgba(20, 0, 0, 0.9);
-            --card-bg: rgba(35, 0, 0, 0.7);
-            --card-border: rgba(255, 0, 0, 0.2);
-            --card-hover: rgba(50, 0, 0, 0.8);
-            --text-primary: #ff3b30;
-            --text-secondary: #990000;
-            --badge-bg: rgba(255, 0, 0, 0.15);
-            --toggle-active-bg: #ff3b30;
-            --toggle-active-knob: #000000;
-        }
-
-        body.has-glass {
-            --blur-val: blur(30px) !important;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            overflow-x: hidden;
-        }
-
-        .app-container {
-            display: flex;
-            width: 100%;
-            min-height: 100vh;
-        }
-
-        sidebar {
-            width: 240px;
-            background-color: var(--sidebar-bg);
-            backdrop-filter: var(--blur-val);
-            -webkit-backdrop-filter: var(--blur-val);
-            border-right: 1px solid var(--card-border);
-            padding: 24px 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: fixed;
-            height: 100vh;
-            z-index: 100;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            margin-bottom: 28px;
-            cursor: pointer;
-            border-radius: 10px;
-        }
-
-        .brand:hover {
-            background-color: var(--card-bg);
-        }
-
-        .brand-icon {
-            width: 32px;
-            height: 32px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .brand-icon svg {
-            width: 18px;
-            height: 18px;
-            fill: none;
-            stroke: var(--text-primary);
-            stroke-width: 2;
-        }
-
-        .brand-title {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: -0.4px;
-        }
-
-        .nav-menu {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .nav-item a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .nav-item a svg {
-            width: 18px;
-            height: 18px;
-            stroke: var(--text-secondary);
-            fill: none;
-            stroke-width: 2;
-        }
-
-        .nav-item.active a, .nav-item a:hover {
-            color: var(--text-primary);
-            background-color: var(--card-bg);
-        }
-
-        .nav-item.active a svg, .nav-item a:hover svg {
-            stroke: var(--text-primary);
-        }
-
-        main {
-            margin-left: 240px;
-            flex: 1;
-            padding: 40px;
-            max-width: 1200px;
-        }
-
-        .view-section {
-            display: none;
-        }
-
-        .view-section.active {
-            display: block;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 32px;
-        }
-
-        .header-title h1 {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
-        }
-
-        .header-title p {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            backdrop-filter: var(--blur-val);
-            -webkit-backdrop-filter: var(--blur-val);
-            border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .card:hover {
-            background-color: var(--card-hover);
-        }
-
-        .card-span-2 {
-            grid-column: span 2;
-        }
-
-        .card-span-3 {
-            grid-column: span 3;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .card-title {
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-title svg {
-            width: 16px;
-            height: 16px;
-            stroke: var(--text-secondary);
-            fill: none;
-            stroke-width: 2;
-        }
-
-        .badge {
-            background-color: var(--badge-bg);
-            color: var(--text-primary);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 12px;
-            letter-spacing: 0.2px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .badge-error {
-            background-color: rgba(255, 59, 48, 0.2);
-            color: #ff3b30;
-        }
-
-        .badge-success {
-            background-color: rgba(52, 199, 89, 0.2);
-            color: #34c759;
-        }
-
-        .metric-sub {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .event-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .event-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px;
-            background-color: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
-        }
-
-        .event-info h4 {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .event-info p {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .event-time {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-
-        .btn-delete-item {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 16px;
-            padding: 0 4px;
-        }
-
-        .btn-delete-item:hover {
-            color: #ff3b30;
-        }
-
-        /* PLANNER INPUTS */
-        .planner-input-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .planner-input {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
-            padding: 8px 12px;
-            color: var(--text-primary);
-            font-size: 13px;
-            outline: none;
-        }
-
-        /* NAWIGACJA ZAKŁADEK W USTAWIENIACH */
-        .settings-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 12px;
-        }
-
-        .settings-nav-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 600;
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .settings-nav-btn.active {
-            background-color: var(--badge-bg);
-            color: var(--text-primary);
-        }
-
-        .settings-tab-content {
-            display: none;
-        }
-
-        .settings-tab-content.active {
-            display: block;
-        }
-
-        .setting-option {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        .setting-option:last-child {
-            border-bottom: none;
-        }
-
-        .theme-btn-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-theme {
-            background-color: var(--badge-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-primary);
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        .btn-theme.active {
-            background-color: var(--text-primary);
-            color: var(--bg-color);
-        }
-
-        /* WŁĄCZNIKI IPHONE (TOGGLE SWITCHES) */
-        .toggle-switch {
-            position: relative;
-            width: 44px;
-            height: 24px;
-            appearance: none;
-            background-color: var(--badge-bg);
-            border-radius: 12px;
-            outline: none;
-            cursor: pointer;
-            border: 1px solid var(--card-border);
-            transition: background-color 0.2s ease;
-        }
-
-        .toggle-switch:checked {
-            background-color: var(--toggle-active-bg);
-        }
-
-        .toggle-switch::before {
-            content: '';
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            background-color: var(--text-secondary);
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-
-        .toggle-switch:checked::before {
-            transform: translateX(20px);
-            background-color: var(--toggle-active-knob);
-        }
-
-        /* MODAL SAMOUCZKA */
-        .tutorial-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .tutorial-modal-card {
-            background-color: rgba(28, 28, 30, 0.95);
-            border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 28px;
-            max-width: 480px;
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .tutorial-step-title {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .tutorial-step-body {
-            font-size: 14px;
-            line-height: 1.5;
-            color: var(--text-primary);
-        }
-
-        .tutorial-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-tutorial {
-            flex: 1;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid var(--card-border);
-            background-color: var(--badge-bg);
-            color: var(--text-primary);
-        }
-
-        .btn-tutorial-primary {
-            background-color: var(--text-primary);
-            color: var(--bg-color);
-        }
-
-        .tutorial-input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .tutorial-select {
-            width: 100%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--card-border);
-            color: var(--text-primary);
-            outline: none;
-        }
-
-        .compass-box {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        .compass-degree {
-            font-size: 32px;
-            font-weight: 700;
-            color: #34c759;
-            margin: 8px 0;
-        }
-
-        .compass-direction {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        @media (max-width: 900px) {
-            .app-container { flex-direction: column; }
-            sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--card-border); }
-            main { margin-left: 0; padding: 20px; }
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .card-span-2, .card-span-3 { grid-column: span 1; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transmisja z Kamerki</title>
+  <!-- Biblioteka PeerJS do łatwego łączenia kamer w przeglądarce -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button, input {
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    input {
+      color: #000;
+    }
+
+    .video-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .video-box {
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    video {
+      width: 400px;
+      height: 300px;
+      background-color: #000;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    .my-id {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #28a745;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- MODAL SAMOUCZKA -->
-    <div id="tutorial-modal" class="tutorial-modal-overlay" style="display: none;">
-        <div class="tutorial-modal-card">
-            <div id="tutorial-step-title" class="tutorial-step-title"></div>
-            <div id="tutorial-step-body" class="tutorial-step-body"></div>
-            <div id="tutorial-actions" class="tutorial-actions"></div>
-        </div>
+  <h1>Transmisja na żywo</h1>
+
+  <div class="my-id">Twoje ID transmisji: <span id="peer-id">Generowanie...</span></div>
+  <p>Wyślij to ID osobom, które mają oglądać Twój stream!</p>
+
+  <div class="controls">
+    <button id="start-btn">1. Włącz moją kamerkę i nadawaj</button>
+    <br>
+    <input type="text" id="remote-id" placeholder="Wklej ID streamera">
+    <button id="connect-btn">2. Oglądaj czyjąś transmisję</button>
+  </div>
+
+  <div class="video-container">
+    <div class="video-box">
+      <h3>Moja kamerka (NADAWANA)</h3>
+      <video id="local-video" autoplay muted playsinline></video>
     </div>
-
-    <div class="app-container">
-        <!-- SIDEBAR NAVIGATION -->
-        <sidebar>
-            <div>
-                <div class="brand" onclick="resetToDashboard()">
-                    <div class="brand-icon">
-                        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 9 0 0 0-9-9zm0 14a5 5 0 1 1 5-5 5 5 0 0 1-5 5z"/></svg>
-                    </div>
-                    <span class="brand-title">SkyPlan</span>
-                </div>
-
-                <ul class="nav-menu">
-                    <li class="nav-item active" data-target="dashboard">
-                        <a onclick="switchView('dashboard', this)">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item" data-target="planner">
-                        <a onclick="switchView('planner', this)">
-                            <svg viewBox="0 0 24 24"><path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM16 2v4M8 2v4M3 10h18"/></svg>
-                            Planner
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <ul class="nav-menu">
-                <li class="nav-item" data-target="settings">
-                    <a onclick="switchView('settings', this)">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        Ustawienia
-                    </a>
-                </li>
-            </ul>
-        </sidebar>
-
-        <!-- MAIN CONTENT CONTAINER -->
-        <main>
-            
-            <!-- VIEW: DASHBOARD -->
-            <div id="view-dashboard" class="view-section active">
-                <header>
-                    <div class="header-title">
-                        <h1>Przegląd nieba</h1>
-                        <p>Zaplanuj dzisiejszą sesję obserwacyjną</p>
-                    </div>
-                </header>
-
-                <div class="dashboard-grid">
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">
-                                <svg viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-                                Warunki dzisiaj
-                            </span>
-                        </div>
-                        <div>
-                            <div class="metric-sub" id="card-conditions">Pobieranie danych...</div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">
-                                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                                Faza Księżyca
-                            </span>
-                        </div>
-                        <div>
-                            <div class="metric-sub" id="card-moon">Oczekiwanie na połączenie...</div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">
-                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                                Zachód Słońca
-                            </span>
-                        </div>
-                        <div>
-                            <div class="metric-sub" id="card-sunset">Oczekiwanie na połączenie...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VIEW: PLANNER -->
-            <div id="view-planner" class="view-section">
-                <header>
-                    <div class="header-title">
-                        <h1>Planner Obserwacji</h1>
-                        <p>Zarządzaj harmonogramem i śledź wiadomości kosmiczne</p>
-                    </div>
-                </header>
-
-                <div class="dashboard-grid">
-                    <div class="card card-span-3">
-                        <div class="card-header">
-                            <span class="card-title">Zaplanuj obiekt na dzisiejszą noc</span>
-                        </div>
-                        
-                        <div class="planner-input-group">
-                            <input type="text" id="planner-object-name" class="planner-input" placeholder="Nazwa obiektu (np. Jowisz, M31)">
-                            <input type="text" id="planner-object-time" class="planner-input" style="max-width: 120px;" placeholder="Godzina (np. 22:30)">
-                            <button class="btn-theme" onclick="addPlannerItem()">Dodaj</button>
-                        </div>
-
-                        <div class="event-list" id="planner-session-list"></div>
-                    </div>
-
-                    <div class="card card-span-3">
-                        <div class="card-header">
-                            <span class="card-title">Aktualności i Wiadomości Kosmiczne</span>
-                            <button id="btn-refresh-news" class="btn-theme" style="display: none;" onclick="loadSpaceNewsAPI()">Odśwież</button>
-                        </div>
-                        <div class="event-list" id="satellites-api-list">
-                            <div class="event-item">
-                                <div class="event-info">
-                                    <h4>Pobieranie aktualności kosmicznych...</h4>
-                                    <p class="metric-sub">Pobieranie danych z serwera</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VIEW: USTAWIENIA -->
-            <div id="view-settings" class="view-section">
-                <header>
-                    <div class="header-title">
-                        <h1>Ustawienia</h1>
-                        <p>Personalizuj motyw, oglądaj zapisane dane oraz konfiguruj aplikację</p>
-                    </div>
-                </header>
-
-                <!-- PODZIAŁ NA PODZAKŁADKI MOTYW / KONTO -->
-                <div class="settings-nav">
-                    <button class="settings-nav-btn active" onclick="switchSettingsTab('motywy', this)">Motyw</button>
-                    <button class="settings-nav-btn" onclick="switchSettingsTab('konto', this)">Konto</button>
-                </div>
-
-                <!-- TAB: MOTYWY -->
-                <div id="tab-motywy" class="settings-tab-content active">
-                    <div class="dashboard-grid">
-                        <div class="card card-span-2">
-                            <div class="card-header">
-                                <span class="card-title">Wygląd i Wyświetlanie</span>
-                            </div>
-
-                            <div class="setting-option">
-                                <div>
-                                    <h4>Motyw kolorystyczny</h4>
-                                    <p class="metric-sub">Wybierz schemat barwny dopasowany do pory dnia lub obserwacji</p>
-                                </div>
-                                <div class="theme-btn-group">
-                                    <button class="btn-theme" id="btn-dark" onclick="setTheme('dark')">Ciemny</button>
-                                    <button class="btn-theme" id="btn-light" onclick="setTheme('light')">Jasny</button>
-                                    <button class="btn-theme" id="btn-red" onclick="setTheme('red')">Czerwony (Noc)</button>
-                                </div>
-                            </div>
-
-                            <div class="setting-option">
-                                <div>
-                                    <h4>Efekt Glassmorphic (Blur)</h4>
-                                    <p class="metric-sub">Półprzezroczyste karty i rozmycie tła w stylu Apple iOS</p>
-                                </div>
-                                <input type="checkbox" id="glass-toggle" class="toggle-switch" onchange="toggleGlass(this.checked)">
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title">Pamięć Lokalna</span>
-                            </div>
-                            <div>
-                                <p class="metric-sub" style="margin-bottom: 16px;">Twoje preferencje i wpisy są zapisywane automatycznie w przeglądarce.</p>
-                                <span class="badge badge-success" style="display: inline-block;">Zapisano</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: KONTO / ZAPISANE DANE -->
-                <div id="tab-konto" class="settings-tab-content">
-                    <div class="dashboard-grid">
-                        <div class="card card-span-3">
-                            <div class="card-header">
-                                <span class="card-title">Profil i Zapisane Wyniki Kalibracji</span>
-                                <button class="btn-theme" onclick="resetTutorialAndSettings()">Uruchom samouczek ponownie</button>
-                            </div>
-                            
-                            <div class="event-list" id="account-data-list">
-                                <!-- Wyniki będą wstawiane automatycznie przez JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </main>
+    <div class="video-box">
+      <h3>Obraz od kogoś (ODBIERANY)</h3>
+      <video id="remote-video" autoplay playsinline></video>
     </div>
-
-    <script>
-        const API_BASE_URL = 'https://api.spaceflightnewsapi.net';
-
-        /* --- LOGIKA SAMOUCZKA (ONBOARDING) --- */
-        let tutorialLanguage = 'en';
-        let orientationListener = null;
-        let currentCalculatedSkyHeading = 180;
-
-        function checkTutorial() {
-            const finished = localStorage.getItem('skyplan_tutorial_finished');
-            if (!finished) {
-                document.getElementById('tutorial-modal').style.display = 'flex';
-                renderTutorialStep(0);
-            }
-        }
-
-        function getCompassCardinal(deg) {
-            const directions = ['N (Północ)', 'NE (Północny Wschód)', 'E (Wschód)', 'SE (Południowy Wschód)', 'S (Południe)', 'SW (Południowy Zachód)', 'W (Zachód)', 'NW (Północny Zachód)'];
-            return directions[Math.round(deg / 45) % 8];
-        }
-
-        function renderTutorialStep(step) {
-            if (orientationListener) {
-                window.removeEventListener('deviceorientation', orientationListener, true);
-                orientationListener = null;
-            }
-
-            const title = document.getElementById('tutorial-step-title');
-            const body = document.getElementById('tutorial-step-body');
-            const actions = document.getElementById('tutorial-actions');
-
-            if (step === 0) {
-                title.innerText = tutorialLanguage === 'en' ? "Welcome to SkyPlan!" : "Hej! Witaj w SkyPlan!";
-                body.innerText = tutorialLanguage === 'en' 
-                    ? "It looks like you are here for the first time. Would you like to start the tour from the beginning or have you used our app before?"
-                    : "Hej! Witaj w SkyPlan! Wygląda na to, że jesteś tutaj po raz pierwszy. Chcesz rozpocząć przygodę ze SkyPlan od początku, czy korzystałeś już wcześniej z naszej aplikacji?";
-                actions.innerHTML = `
-                    <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(1)">${tutorialLanguage === 'en' ? 'New user' : 'Nowy'}</button>
-                    <button class="btn-tutorial" onclick="finishTutorial()">${tutorialLanguage === 'en' ? 'Used before' : 'Korzystałem wcześniej'}</button>
-                `;
-            } else if (step === 1) {
-                title.innerText = tutorialLanguage === 'en' ? "1. Introduction" : "1. Okej!";
-                body.innerText = tutorialLanguage === 'en'
-                    ? "1. Okay! In that case, I will ask you a few short questions to better match SkyPlan to your needs."
-                    : "1 Okej! W takim razie zadam Ci kilka krótkich pytań, aby lepiej dopasować SkyPlan do Twoich potrzeb.";
-                actions.innerHTML = `
-                    <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(2)">${tutorialLanguage === 'en' ? 'Next' : 'Dalej'}</button>
-                `;
-            } else if (step === 2) {
-                title.innerText = tutorialLanguage === 'en' ? "2. Setup Data" : "2. Dane";
-                body.innerHTML = `
-                    ${tutorialLanguage === 'en' ? '2. Fill in the data below to ensure proper application performance.' : '2 Uzupełnij poniższe dane, aby zapewnić prawidłowe działanie aplikacji.'}
-                    <div class="tutorial-input-group">
-                        <label style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Language / Język:' : 'Język / Language:'}</label>
-                        <select id="tut-lang-select" class="tutorial-select" onchange="tutorialLanguage = this.value; renderTutorialStep(2);">
-                            <option value="en" ${tutorialLanguage === 'en' ? 'selected' : ''}>English</option>
-                            <option value="pl" ${tutorialLanguage === 'pl' ? 'selected' : ''}>Polski</option>
-                        </select>
-
-                        <label style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Distance unit:' : 'Jednostki:'}</label>
-                        <select id="tut-units" class="tutorial-select">
-                            <option value="km">km</option>
-                            <option value="mile">mile</option>
-                        </select>
-
-                        <label style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Time format:' : 'Format czasu:'}</label>
-                        <select id="tut-timeformat" class="tutorial-select">
-                            <option value="24h">24h</option>
-                            <option value="12h">12h</option>
-                        </select>
-                    </div>
-                `;
-                actions.innerHTML = `
-                    <button class="btn-tutorial btn-tutorial-primary" onclick="saveStep2Data(); renderTutorialStep(3);">${tutorialLanguage === 'en' ? 'Save & Next' : 'Zapisz i dalej'}</button>
-                `;
-            } else if (step === 3) {
-                title.innerText = tutorialLanguage === 'en' ? "3. Observation Spot" : "3. Kalibracja miejsca";
-                body.innerText = tutorialLanguage === 'en'
-                    ? "3. Okay! Now let's calibrate your observation spot. Can you go to the place where you usually observe the night sky?"
-                    : "3 Okej! Teraz skalibrujmy Twoje miejsce obserwacji. Czy możesz udać się do miejsca, z którego zwykle obserwujesz nocne niebo?";
-                actions.innerHTML = `
-                    <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(4)">${tutorialLanguage === 'en' ? 'I am there' : 'Jestem na miejscu'}</button>
-                `;
-            } else if (step === 4) {
-                title.innerText = tutorialLanguage === 'en' ? "4. Orientation Calibration" : "4. Kalibracja ściany / pola widzenia";
-                body.innerHTML = `
-                    <p style="margin-bottom:10px;">${tutorialLanguage === 'en' 
-                        ? '4. If you are on a balcony or near a wall, place the back of your phone flat against the wall. Then click "Start" to begin live sensor reading.' 
-                        : '4 Jeśli znajdujesz się na balkonie lub w pobliżu ściany, przyłóż tył telefonu płasko do ściany. Następnie kliknij „Start”, aby rozpocząć odczyt żyroskopu.'}</p>
-                    <p>${tutorialLanguage === 'en' 
-                        ? 'If you do not have a wall nearby or have a full 360° view, click "I do not have a wall nearby".' 
-                        : 'Jeśli nie masz w pobliżu ściany lub masz pełny widok 360°, kliknij przycisk „Nie mam ściany w pobliżu”.'}</p>
-                    <div id="calibration-interactive-area" style="margin-top:12px;"></div>
-                `;
-                actions.innerHTML = `
-                    <button class="btn-tutorial btn-tutorial-primary" onclick="startDeviceWallCalibration()">${tutorialLanguage === 'en' ? 'Start (Wall)' : 'Start (Ze ścianą)'}</button>
-                    <button class="btn-tutorial" onclick="showNoWallSlider()">${tutorialLanguage === 'en' ? 'I do not have a wall nearby' : 'Nie mam ściany w pobliżu'}</button>
-                `;
-            } else if (step === 5) {
-                title.innerText = tutorialLanguage === 'en' ? "5. Thank you!" : "5. Dziękujemy!";
-                body.innerHTML = tutorialLanguage === 'en'
-                    ? `5. Thank you for using SkyPlan!<br>If you want to discover even more features and join our community, welcome to our Discord:<br><br><b>Link: https://discord.gg/skyplan</b>`
-                    : `5 Dziękujemy, że korzystasz ze SkyPlan!<br>Jeśli chcesz odkryć jeszcze więcej możliwości i dołączyć do naszej społeczności, zapraszamy na naszego Discorda:<br><br><b>Link: https://discord.gg/skyplan</b>`;
-                actions.innerHTML = `
-                    <button class="btn-tutorial btn-tutorial-primary" onclick="requestFinalGPSAndComplete()">${tutorialLanguage === 'en' ? 'Finish Setup' : 'Zakończ samouczek'}</button>
-                `;
-            }
-        }
-
-        function saveStep2Data() {
-            const units = document.getElementById('tut-units') ? document.getElementById('tut-units').value : 'km';
-            const tf = document.getElementById('tut-timeformat') ? document.getElementById('tut-timeformat').value : '24h';
-            
-            localStorage.setItem('skyplan_user_lang', tutorialLanguage);
-            localStorage.setItem('skyplan_user_units', units);
-            localStorage.setItem('skyplan_user_tf', tf);
-        }
-
-        function startDeviceWallCalibration() {
-            const area = document.getElementById('calibration-interactive-area');
-            const actions = document.getElementById('tutorial-actions');
-
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            bindRealCompassSensors(area, actions);
-                        } else {
-                            area.innerHTML = `<p style="color:#ff3b30;">${tutorialLanguage === 'en' ? 'Permission to orientation sensor denied.' : 'Brak dostępu do czujników ruchu.'}</p>`;
-                        }
-                    })
-                    .catch(console.error);
-            } else if (window.DeviceOrientationEvent) {
-                bindRealCompassSensors(area, actions);
-            } else {
-                area.innerHTML = `<p style="color:#ff3b30;">${tutorialLanguage === 'en' ? 'Device orientation not supported.' : 'Twoja przeglądarka nie obsługuje czujników kompasu.'}</p>`;
-            }
-        }
-
-        function bindRealCompassSensors(area, actions) {
-            area.innerHTML = `
-                <div class="compass-box">
-                    <div style="font-size:12px; color:var(--text-secondary);">${tutorialLanguage === 'en' ? 'Kierunek widoku na niebo:' : 'Kierunek widoku na niebo:'}</div>
-                    <div class="compass-degree" id="live-deg-display">---°</div>
-                    <div class="compass-direction" id="live-cardinal-display">---</div>
-                </div>
-            `;
-
-            actions.innerHTML = `
-                <button class="btn-tutorial btn-tutorial-primary" onclick="confirmWallCalibration()">${tutorialLanguage === 'en' ? 'Save position' : 'Zapisz ten kierunek'}</button>
-            `;
-
-            orientationListener = function(e) {
-                let wallHeading = null;
-
-                if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-                    wallHeading = e.webkitCompassHeading;
-                } else if (e.alpha !== undefined && e.alpha !== null) {
-                    wallHeading = 360 - e.alpha;
-                }
-
-                if (wallHeading !== null) {
-                    currentCalculatedSkyHeading = Math.round((wallHeading + 180) % 360);
-                    
-                    const degDisp = document.getElementById('live-deg-display');
-                    const cardDisp = document.getElementById('live-cardinal-display');
-
-                    if (degDisp) degDisp.innerText = `${currentCalculatedSkyHeading}°`;
-                    if (cardDisp) cardDisp.innerText = getCompassCardinal(currentCalculatedSkyHeading);
-                }
-            };
-
-            window.addEventListener('deviceorientation', orientationListener, true);
-        }
-
-        function confirmWallCalibration() {
-            localStorage.setItem('skyplan_balcony_heading', currentCalculatedSkyHeading);
-            renderTutorialStep(5);
-        }
-
-        function showNoWallSlider() {
-            const area = document.getElementById('calibration-interactive-area');
-            const actions = document.getElementById('tutorial-actions');
-
-            area.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <label style="font-size:13px;">${tutorialLanguage === 'en' ? 'Field of view degrees:' : 'Kąt widoku (stopnie):'} <b id="slider-deg-val">180°</b></label>
-                    <input type="range" min="30" max="360" value="180" style="width:100%;" oninput="document.getElementById('slider-deg-val').innerText = this.value + '°'; localStorage.setItem('skyplan_view_fov', this.value);">
-                </div>
-            `;
-
-            actions.innerHTML = `
-                <button class="btn-tutorial btn-tutorial-primary" onclick="renderTutorialStep(5)">${tutorialLanguage === 'en' ? 'Confirm' : 'Potwierdź'}</button>
-            `;
-        }
-
-        function requestFinalGPSAndComplete() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        localStorage.setItem('skyplan_gps_lat', pos.coords.latitude);
-                        localStorage.setItem('skyplan_gps_lng', pos.coords.longitude);
-                        finishTutorial();
-                        loadSkyData();
-                    },
-                    (err) => {
-                        finishTutorial();
-                    }
-                );
-            } else {
-                finishTutorial();
-            }
-        }
-
-        function finishTutorial() {
-            localStorage.setItem('skyplan_tutorial_finished', 'true');
-            document.getElementById('tutorial-modal').style.display = 'none';
-            renderAccountData();
-        }
-
-        /* --- ZARZĄDZANIE ZAKŁADKAMI W USTAWIENIACH --- */
-
-        function switchSettingsTab(tabName, btnElement) {
-            document.querySelectorAll('.settings-tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
-
-            document.getElementById('tab-' + tabName).classList.add('active');
-            if (btnElement) btnElement.classList.add('active');
-
-            if (tabName === 'konto') {
-                renderAccountData();
-            }
-        }
-
-        /* RENDEROOWANIE DANYCH KONTA Z LOCALSTORAGE */
-        function renderAccountData() {
-            const container = document.getElementById('account-data-list');
-            if (!container) return;
-
-            const lang = localStorage.getItem('skyplan_user_lang') || 'Brak danych (Domyślnie PL)';
-            const units = localStorage.getItem('skyplan_user_units') || 'km';
-            const timeFormat = localStorage.getItem('skyplan_user_tf') || '24h';
-            const balconyHeading = localStorage.getItem('skyplan_balcony_heading');
-            const fov = localStorage.getItem('skyplan_view_fov');
-            const lat = localStorage.getItem('skyplan_gps_lat');
-            const lng = localStorage.getItem('skyplan_gps_lng');
-            const theme = localStorage.getItem('skyplan_theme') || 'dark';
-
-            let headingText = 'Brak kalibracji ściany';
-            if (balconyHeading !== null) {
-                headingText = `${balconyHeading}° (${getCompassCardinal(parseInt(balconyHeading))})`;
-            } else if (fov !== null) {
-                headingText = `Widok bez ściany (${fov}°)`;
-            }
-
-            let gpsText = (lat && lng) ? `${parseFloat(lat).toFixed(4)}°, ${parseFloat(lng).toFixed(4)}°` : 'Nie ustawiono (Domyślnie 52.34°, 21.19°)';
-
-            container.innerHTML = `
-                <div class="event-item">
-                    <div class="event-info">
-                        <h4>Język aplikacji</h4>
-                        <p>${lang === 'en' ? 'English' : 'Polski'}</p>
-                    </div>
-                    <span class="badge">${lang.toUpperCase()}</span>
-                </div>
-                <div class="event-item">
-                    <div class="event-info">
-                        <h4>Preferowane Jednostki</h4>
-                        <p>Odległość: ${units} | Format czasu: ${timeFormat}</p>
-                    </div>
-                    <span class="badge">${units}</span>
-                </div>
-                <div class="event-item">
-                    <div class="event-info">
-                        <h4>Wynik kalibracji ściany / pola widzenia</h4>
-                        <p>Kierunek nieba: ${headingText}</p>
-                    </div>
-                    <span class="badge badge-success">Kalibracja Zapisana</span>
-                </div>
-                <div class="event-item">
-                    <div class="event-info">
-                        <h4>Współrzędne Obserwacyjne GPS</h4>
-                        <p>${gpsText}</p>
-                    </div>
-                    <span class="badge">${lat ? 'GPS Aktywny' : 'Domyślne'}</span>
-                </div>
-                <div class="event-item">
-                    <div class="event-info">
-                        <h4>Aktywny Motyw Interfejsu</h4>
-                        <p>${theme.toUpperCase()}</p>
-                    </div>
-                    <span class="badge">${theme}</span>
-                </div>
-            `;
-        }
-
-        function resetTutorialAndSettings() {
-            localStorage.removeItem('skyplan_tutorial_finished');
-            checkTutorial();
-        }
-
-        function resetToDashboard() {
-            const dashboardNavItem = document.querySelector('.nav-item[data-target="dashboard"] a');
-            switchView('dashboard', dashboardNavItem);
-        }
-
-        function switchView(viewName, element) {
-            document.querySelectorAll('.view-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById('view-' + viewName).classList.add('active');
-
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            if (element) {
-                const navItem = element.closest ? element.closest('.nav-item') : element.parentElement;
-                if (navItem) navItem.classList.add('active');
-            }
-
-            if (viewName === 'planner') {
-                loadSpaceNewsAPI();
-            } else if (viewName === 'settings') {
-                renderAccountData();
-            }
-        }
-
-        function setTheme(themeName) {
-            document.body.classList.remove('theme-light', 'theme-red');
-            document.querySelectorAll('.btn-theme').forEach(btn => btn.classList.remove('active'));
-
-            if (themeName === 'light') {
-                document.body.classList.add('theme-light');
-                document.getElementById('btn-light').classList.add('active');
-            } else if (themeName === 'red') {
-                document.body.classList.add('theme-red');
-                document.getElementById('btn-red').classList.add('active');
-            } else {
-                document.getElementById('btn-dark').classList.add('active');
-            }
-
-            localStorage.setItem('skyplan_theme', themeName);
-        }
-
-        function toggleGlass(enabled) {
-            if (enabled) {
-                document.body.classList.add('has-glass');
-            } else {
-                document.body.classList.remove('has-glass');
-            }
-            localStorage.setItem('skyplan_glass', enabled);
-        }
-
-        /* --- OBSŁUGA LOCAL STORAGE DLA PLANNERA --- */
-
-        let plannerItems = [];
-
-        function loadPlannerStorage() {
-            const savedItems = localStorage.getItem('skyplan_planner_items');
-            if (savedItems) {
-                plannerItems = JSON.parse(savedItems);
-            } else {
-                plannerItems = [];
-                savePlannerStorage();
-            }
-            renderPlannerItems();
-        }
-
-        function savePlannerStorage() {
-            localStorage.setItem('skyplan_planner_items', JSON.stringify(plannerItems));
-        }
-
-        function renderPlannerItems() {
-            const list = document.getElementById('planner-session-list');
-            if (!list) return;
-
-            if (plannerItems.length === 0) {
-                list.innerHTML = `<div class="metric-sub">Brak zaplanowanych obiektów na tę noc.</div>`;
-                return;
-            }
-
-            list.innerHTML = plannerItems.map((item, index) => `
-                <div class="event-item">
-                    <div class="event-info">
-                        <h4>${item.title}</h4>
-                        <p>${item.desc}</p>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="event-time">${item.time}</span>
-                        <button class="btn-delete-item" onclick="deletePlannerItem(${index})">✕</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function addPlannerItem() {
-            const nameInput = document.getElementById('planner-object-name');
-            const timeInput = document.getElementById('planner-object-time');
-
-            if (!nameInput.value.trim()) return;
-
-            const timeText = timeInput.value.trim() || '22:00';
-            plannerItems.push({
-                id: Date.now(),
-                title: nameInput.value.trim(),
-                desc: 'Zaplanowano do obserwacji',
-                time: timeText
-            });
-
-            savePlannerStorage();
-            renderPlannerItems();
-
-            nameInput.value = '';
-            timeInput.value = '';
-        }
-
-        function deletePlannerItem(index) {
-            plannerItems.splice(index, 1);
-            savePlannerStorage();
-            renderPlannerItems();
-        }
-
-        /* --- INTEGRACJA API WIADOMOŚCI & DANYCH ASTRONOMICZNYCH --- */
-
-        async function fetchAPI(endpoint) {
-            try {
-                const response = await fetch(API_BASE_URL + endpoint);
-                if (response.ok) {
-                    return { ok: true, data: await response.json() };
-                } else {
-                    throw new Error("Wystąpił problem z połączeniem.");
-                }
-            } catch (err) {
-                return { ok: false, error: err.message };
-            }
-        }
-
-        function translateTitle(title) {
-            if (!title) return "Aktualności z misji kosmicznej";
-            if (title.includes("Starliner arrive safely back on Earth")) {
-                return "Kapsuła Starliner wylądowała bezpiecznie na Ziemi";
-            }
-            return title;
-        }
-
-        async function loadSpaceNewsAPI() {
-            const container = document.getElementById('satellites-api-list');
-            const refreshBtn = document.getElementById('btn-refresh-news');
-            if (!container) return;
-
-            container.innerHTML = `<div class="event-item"><div class="event-info"><h4>Pobieranie wiadomości...</h4><p class="metric-sub">Pobieranie danych</p></div></div>`;
-
-            const articlesRes = await fetchAPI('/v4/articles/?limit=3');
-            const reportsRes = await fetchAPI('/v4/reports/?limit=1');
-
-            let html = '';
-            let hasError = false;
-
-            if (reportsRes.ok && reportsRes.data && reportsRes.data.results && reportsRes.data.results.length > 0) {
-                const report = reportsRes.data.results[0];
-                const translatedTitle = translateTitle(report.title);
-                html += `
-                    <div class="event-item">
-                        <div class="event-info">
-                            <h4>Raport Misji: ${translatedTitle}</h4>
-                            <p>Źródło: ${report.news_site || 'Wiadomości Kosmiczne'}</p>
-                        </div>
-                        <span class="badge badge-success">Zaktualizowano</span>
-                    </div>`;
-            } else if (!reportsRes.ok) {
-                hasError = true;
-            }
-
-            if (articlesRes.ok && articlesRes.data && articlesRes.data.results) {
-                articlesRes.data.results.forEach(article => {
-                    html += `
-                        <div class="event-item">
-                            <div class="event-info">
-                                <h4>${article.title}</h4>
-                                <p>Źródło: ${article.news_site}</p>
-                            </div>
-                            <div class="event-time">${new Date(article.published_at).toLocaleDateString('pl-PL')}</div>
-                        </div>`;
-                });
-            } else if (!articlesRes.ok) {
-                hasError = true;
-            }
-
-            if (hasError) {
-                html = `
-                    <div class="event-item">
-                        <div class="event-info">
-                            <h4>Nie udało się pobrać wiadomości</h4>
-                            <p class="metric-sub">Sprawdź połączenie z siecią i spróbuj ponownie.</p>
-                        </div>
-                        <span class="badge badge-error">Błąd</span>
-                    </div>`;
-                refreshBtn.style.display = 'inline-block';
-            } else {
-                refreshBtn.style.display = 'none';
-            }
-
-            container.innerHTML = html;
-        }
-
-        async function loadSkyData() {
-            const lat = localStorage.getItem('skyplan_gps_lat') || 52.34;
-            const lng = localStorage.getItem('skyplan_gps_lng') || 21.19;
-
-            const moonTranslations = {
-                'New Moon': 'Nów',
-                'Waxing Crescent': 'Sierp przybywający',
-                'First Quarter': 'Pierwsza kwadra',
-                'Waxing Gibbous': 'Księżyc przybywający',
-                'Full Moon': 'Pełnia',
-                'Waning Gibbous': 'Księżyc ubywający',
-                'Third Quarter': 'Ostatnia kwadra',
-                'Waning Crescent': 'Sierp ubywający'
-            };
-
-            try {
-                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=cloud_cover&hourly=cloud_cover&forecast_days=1`);
-                const weatherData = await weatherRes.json();
-
-                const condElement = document.getElementById('card-conditions');
-                if (condElement && weatherData.current && weatherData.hourly) {
-                    const currentClouds = weatherData.current.cloud_cover;
-                    
-                    const currentHour = new Date().getHours();
-                    const hourlyTimes = weatherData.hourly.time;
-                    const hourlyClouds = weatherData.hourly.cloud_cover;
-
-                    let hourlyHtml = '';
-                    for (let i = 1; i <= 3; i++) {
-                        const nextHourIndex = currentHour + i;
-                        if (nextHourIndex < hourlyTimes.length) {
-                            const hourLabel = `${(currentHour + i) % 24}:00`;
-                            const cloudVal = hourlyClouds[nextHourIndex];
-                            hourlyHtml += `<span style="font-size: 11px;">${hourLabel}: <b>${cloudVal}%</b></span> `;
-                        }
-                    }
-
-                    condElement.innerHTML = `
-                        <strong style="font-size: 20px; color: var(--text-primary);">${currentClouds}%</strong> zachmurzenia<br>
-                        <div style="margin-top: 6px; color: var(--text-secondary); display: flex; gap: 8px;">
-                            ${hourlyHtml}
-                        </div>
-                    `;
-                }
-            } catch (err) {
-                console.error("Błąd pobierania pogody:", err);
-            }
-
-            try {
-                const response = await fetch(`https://api.sunrisesunset.io/json?lat=${lat}&lng=${lng}&timezone=Europe/Warsaw`);
-                const result = await response.json();
-
-                if (result.status === "OK" && result.results) {
-                    const data = result.results;
-
-                    const moonElement = document.getElementById('card-moon');
-                    if (moonElement) {
-                        const phasePL = moonTranslations[data.moon_phase] || data.moon_phase;
-                        moonElement.innerHTML = `<strong style="font-size: 20px; color: var(--text-primary);">${data.moon_illumination}%</strong><br>Faza: ${phasePL}`;
-                    }
-
-                    const sunsetElement = document.getElementById('card-sunset');
-                    if (sunsetElement) {
-                        sunsetElement.innerHTML = `<strong style="font-size: 20px; color: var(--text-primary);">${data.sunset}</strong><br>Zmierzch astron.: ${data.astronomical_twilight_end}`;
-                    }
-                }
-            } catch (err) {
-                console.error("Błąd pobierania danych nieba:", err);
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('skyplan_theme') || 'dark';
-            setTheme(savedTheme);
-
-            const savedGlass = localStorage.getItem('skyplan_glass');
-            const glassEnabled = savedGlass !== null ? (savedGlass === 'true') : false;
-            
-            document.getElementById('glass-toggle').checked = glassEnabled;
-            toggleGlass(glassEnabled);
-
-            loadPlannerStorage();
-            loadSkyData();
-            checkTutorial();
-        });
-    </script>
+  </div>
+
+  <script>
+    // Inicjalizacja PeerJS (generuje unikalny identyfikator)
+    const peer = new Peer();
+
+    const peerIdSpan = document.getElementById('peer-id');
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+    const startBtn = document.getElementById('start-btn');
+    const connectBtn = document.getElementById('connect-btn');
+    const remoteIdInput = document.getElementById('remote-id');
+
+    let localStream = null;
+
+    // Wyświetlenie unikalnego ID po połączeniu z serwerem PeerJS
+    peer.on('open', (id) => {
+      peerIdSpan.innerText = id;
+    });
+
+    // 1. Włączanie własnej kamerki po kliknięciu przycisku
+    startBtn.addEventListener('click', async () => {
+      try {
+        // Prośba o dostęp do kamerki i mikrofonu
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
+        alert('Kamerka włączona! Teraz inni mogą się do Ciebie połączyć używając Twojego ID.');
+      } catch (err) {
+        console.error('Błąd uzyskiwania dostępu do kamerki:', err);
+        alert('Nie udało się uzyskać dostępu do kamerki/mikrofonu.');
+      }
+    });
+
+    // Obsługa sytuacji, gdy ktoś do nas dzwoni / chce oglądać nasz obraz
+    peer.on('call', (call) => {
+      if (localStream) {
+        // Odpowiadamy na połączenie, wysyłając nasz obraz z kamerki
+        call.answer(localStream);
+      } else {
+        alert('Ktoś próbuje obejrzeć Twój stream, ale nie włączyłeś jeszcze kamerki!');
+      }
+    });
+
+    // 2. Połączenie się jako widz do kogoś innego
+    connectBtn.addEventListener('click', () => {
+      const remoteId = remoteIdInput.value.trim();
+      if (!remoteId) {
+        alert('Wpisz ID osoby, którą chcesz oglądać!');
+        return;
+      }
+
+      // Łączymy się z podanym ID
+      const call = peer.call(remoteId, localStream);
+
+      // Gdy odbierzemy strumień wideo od streamera
+      call.on('stream', (remoteStream) => {
+        remoteVideo.srcObject = remoteStream;
+      });
+    });
+  </script>
 </body>
 </html>

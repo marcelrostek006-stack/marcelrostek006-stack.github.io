@@ -27,6 +27,7 @@
             background: #ffffff;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            min-width: 320px;
         }
 
         h1 {
@@ -48,6 +49,21 @@
             font-size: 4rem;
             font-weight: bold;
             color: #007bff;
+            margin-bottom: 25px;
+        }
+
+        .counter {
+            font-size: 0.95rem;
+            color: #555;
+            background-color: #f0f4f8;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .counter span {
+            font-weight: bold;
+            color: #007bff;
         }
     </style>
 </head>
@@ -57,9 +73,11 @@
         <h1>MARCEL ROSTEK</h1>
         <div class="clock-label">Aktualna godzina</div>
         <div class="clock" id="time">00:00</div>
+        <div class="counter">Liczba odwiedzin: <span id="visit-count">0</span></div>
     </div>
 
     <script>
+        // Obsługa zegara
         function updateClock() {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
@@ -68,11 +86,20 @@
             document.getElementById('time').textContent = `${hours}:${minutes}`;
         }
 
-        // Aktualizacja godziny od razu przy załadowaniu strony
         updateClock();
-
-        // Odświeżanie zegara co sekundę
         setInterval(updateClock, 1000);
+
+        // Licznik odwiedzin w localStorage
+        let visits = localStorage.getItem('page_visits');
+
+        if (visits) {
+            visits = parseInt(visits) + 1;
+        } else {
+            visits = 1;
+        }
+
+        localStorage.setItem('page_visits', visits);
+        document.getElementById('visit-count').textContent = visits;
     </script>
 
 </body>

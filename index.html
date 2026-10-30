@@ -27,7 +27,7 @@
             background: #ffffff;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            min-width: 380px;
+            min-width: 420px;
         }
 
         h1 {
@@ -85,12 +85,18 @@
         <div class="clock" id="time">00:00:00</div>
 
         <div class="status-box">
-            <div>Status: <span class="status">Na stronie (Aktywny)</span></div>
-            <div class="info-row">Ostatnie wejście: <span id="entry-time-str">--:--:--</span></div>
-            <div class="info-row">Czas tej wizyty: <span id="current-session-time">00g 00m 00s</span></div>
-            <div class="info-row">Liczba odwiedzin: <span id="visit-count">0</span></div>
-            <div class="info-row" style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 8px;">
-                Łącznie spędzony czas: <span id="total-time">00g 00m 00s</span>
+            <div>Status: <span class="status">Na stronie</span></div>
+            <div class="info-row">Wejście: <span id="current-entry-time">--:--:--</span></div>
+            <div class="info-row">Czas trwania obecnej wizyty: <span id="current-session-duration">00g 00m 00s</span></div>
+            
+            <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 10px;">
+                <div class="info-row" style="color: #1e293b; font-weight: bold; margin-bottom: 4px;">Ostatnia zakończona wizyta:</div>
+                <div class="info-row">Od: <span id="last-entry">--:--:--</span> do: <span id="last-exit">--:--:--</span></div>
+                <div class="info-row">Trwała: <span id="last-duration">Brak poprzednich wizyt</span></div>
+            </div>
+
+            <div class="info-row" style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 10px;">
+                Łącznie spędzony czas (wszystkie wizyty): <span id="total-time">00g 00m 00s</span>
             </div>
         </div>
     </div>
@@ -104,7 +110,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Formatowanie czasu na godziny, minuty, sekundy
+        // Funkcja do ładnego formatowania sekund na godziny, minuty, sekundy
         function formatHMS(totalSec) {
             const h = Math.floor(totalSec / 3600);
             const m = Math.floor((totalSec % 3600) / 60);
@@ -112,34 +118,57 @@
             return `${String(h).padStart(2, '0')}g ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
         }
 
-        // Inicjalizacja wizyty po wejściu na stronę
-        let visits = parseInt(localStorage.getItem('visit_count')) || 0;
-        visits += 1;
-        localStorage.setItem('visit_count', visits);
-        document.getElementById('visit-count').textContent = visits;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const nowDate = new Date();
+        const nowTimeString = nowDate.toTimeString().split(' ')[0];
 
-        const sessionStartTimestamp = Math.floor(Date.now() / 1000);
-        const entryDate = new Date();
-        const entryTimeString = entryDate.toTimeString().split(' ')[0];
-        document.getElementById('entry-time-str').textContent = entryTimeString;
+        // Odczyt z pamięci przeglądarki poprzedniej sesji (jeśli istnieje)
+        let lastEntryStr = localStorage.getItem('active_entry_str');
+        let lastEntryTimestamp = localStorage.getItem('active_entry_timestamp');
 
         let totalSeconds = parseInt(localStorage.getItem('total_seconds')) || 0;
 
-        // Pętla aktualizująca czas trwania bieżącej sesji oraz łączny czas
+        if (lastEntryTimestamp) {
+            // Skoro istniał zapisany początek starej sesji, to znaczy że użytkownik właśnie "weszedł ponownie"
+            // Wyliczamy kiedy wyszedł (teraz) i jak długo trwała tamta wizyta
+            let prevStart = parseInt(lastEntryTimestamp);
+            let duration = nowSec - prevStart;
+            if (duration < 0) duration = 0;
+
+            let prevExitStr = nowTimeString;
+
+            // Zapisujemy dane o ostatniej zakończonej wizycie do localStorage, żeby były widoczne
+            localStorage.setItem('last_entry_str', lastEntryStr);
+            localStorage.setItem('last_exit_str', prevExitStr);
+            localStorage.setItem('last_duration', duration);
+
+            // Dodajemy czas tamtej wizyty do łącznego czasu
+            totalSeconds += duration;
+            localStorage.setItem('total_seconds', totalSeconds);
+        }
+
+        // Wyświetlenie danych o ostatniej wizycie na ekranie
+        if (localStorage.getItem('last_entry_str')) {
+            document.getElementById('last-entry').textContent = localStorage.getItem('last_entry_str');
+            document.getElementById('last-exit').textContent = localStorage.getItem('last_exit_str');
+            let lastDurSec = parseInt(localStorage.getItem('last_duration')) || 0;
+            document.getElementById('last-duration').textContent = formatHMS(lastDurSec);
+        }
+
+        // Ustawienie nowej, bieżącej wizyty
+        localStorage.setItem('active_entry_timestamp', nowSec);
+        localStorage.setItem('active_entry_str', nowTimeString);
+        document.getElementById('current-entry-time').textContent = nowTimeString;
+        document.getElementById('total-time').textContent = formatHMS(totalSeconds);
+
+        // Licznik na żywo dla aktualnej sesji
         setInterval(() => {
-            const nowSec = Math.floor(Date.now() / 1000);
-            const currentSessionSec = nowSec - sessionStartTimestamp;
+            const currentSec = Math.floor(Date.now() / 1000);
+            const sessionDuration = currentSec - nowSec;
 
-            document.getElementById('current-session-time').textContent = formatHMS(currentSessionSec);
-            document.getElementById('total-time').textContent = formatHMS(totalSeconds + currentSessionSec);
+            document.getElementById('current-session-duration').textContent = formatHMS(sessionDuration);
+            document.getElementById('total-time').textContent = formatHMS(totalSeconds + sessionDuration);
         }, 1000);
-
-        // Zapisywanie czasu do localStorage w momencie opuszczania / zamykania karty
-        window.addEventListener('beforeunload', () => {
-            const nowSec = Math.floor(Date.now() / 1000);
-            const currentSessionSec = nowSec - sessionStartTimestamp;
-            localStorage.setItem('total_seconds', totalSeconds + currentSessionSec);
-        });
     </script>
 
 </body>

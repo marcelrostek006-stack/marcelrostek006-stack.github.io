@@ -27,18 +27,18 @@
             background: #ffffff;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            min-width: 320px;
+            min-width: 380px;
         }
 
         h1 {
-            font-size: 3rem;
+            font-size: 2.8rem;
             margin-bottom: 20px;
             color: #1a1a1a;
             letter-spacing: 2px;
         }
 
         .clock-label {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #666;
@@ -46,24 +46,62 @@
         }
 
         .clock {
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: bold;
             color: #007bff;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
-        .counter {
-            font-size: 0.95rem;
-            color: #555;
+        .status-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
             background-color: #f0f4f8;
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: inline-block;
+            font-size: 0.95rem;
+            text-align: left;
         }
 
-        .counter span {
+        .status {
+            font-weight: bold;
+        }
+
+        .status.in {
+            color: #28a745;
+        }
+
+        .status.out {
+            color: #dc3545;
+        }
+
+        .info-row {
+            margin-top: 6px;
+            color: #444;
+        }
+
+        .info-row span {
             font-weight: bold;
             color: #007bff;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
@@ -72,34 +110,107 @@
     <div class="container">
         <h1>MARCEL ROSTEK</h1>
         <div class="clock-label">Aktualna godzina</div>
-        <div class="clock" id="time">00:00</div>
-        <div class="counter">Liczba odwiedzin: <span id="visit-count">0</span></div>
+        <div class="clock" id="time">00:00:00</div>
+
+        <div class="status-box">
+            <div>Status: <span id="status-text" class="status out">Nieobecny</span></div>
+            <div class="info-row">Wejście: <span id="entry-time-str">--:--:--</span></div>
+            <div class="info-row">Wyjście: <span id="exit-time-str">--:--:--</span></div>
+            <div class="info-row">Czas tej sesji: <span id="current-session-time">00g 00m 00s</span></div>
+            <div class="info-row" style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 8px;">
+                Łącznie spędzony czas: <span id="total-time">00g 00m 00s</span>
+            </div>
+        </div>
+
+        <button class="btn" id="toggle-btn" onclick="togglePresence()">Przyłóż (Wejdź / Wyjdź)</button>
     </div>
 
     <script>
-        // Obsługa zegara
+        // Główny zegar strony (z sekundami)
         function updateClock() {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            
-            document.getElementById('time').textContent = `${hours}:${minutes}`;
+            document.getElementById('time').textContent = now.toTimeString().split(' ')[0];
         }
-
-        updateClock();
         setInterval(updateClock, 1000);
+        updateClock();
 
-        // Licznik odwiedzin w localStorage
-        let visits = localStorage.getItem('page_visits');
+        // Odczyt stanu z localStorage
+        let isIn = localStorage.getItem('is_in') === 'true';
+        let totalSeconds = parseInt(localStorage.getItem('total_seconds')) || 0;
+        let entryTimestamp = parseInt(localStorage.getItem('entry_timestamp')) || null;
+        let entryTimeString = localStorage.getItem('entry_time_string') || '--:--:--';
+        let exitTimeString = localStorage.getItem('exit_time_string') || '--:--:--';
 
-        if (visits) {
-            visits = parseInt(visits) + 1;
-        } else {
-            visits = 1;
+        function formatHMS(totalSec) {
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            return `${String(h).padStart(2, '0')}g ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
         }
 
-        localStorage.setItem('page_visits', visits);
-        document.getElementById('visit-count').textContent = visits;
+        function updateUI() {
+            const statusText = document.getElementById('status-text');
+            document.getElementById('entry-time-str').textContent = entryTimeString;
+            document.getElementById('exit-time-str').textContent = exitTimeString;
+
+            if (isIn) {
+                statusText.textContent = "Obecny (Wszedłeś)";
+                statusText.className = "status in";
+            } else {
+                statusText.textContent = "Nieobecny (Wyszedłeś)";
+                statusText.className = "status out";
+            }
+        }
+
+        function togglePresence() {
+            const now = new Date();
+            const timeString = now.toTimeString().split(' ')[0];
+            const currentSec = Math.floor(now.getTime() / 1000);
+
+            if (!isIn) {
+                // 1. Przyłożenie – WEJŚCIE
+                isIn = true;
+                entryTimestamp = currentSec;
+                entryTimeString = timeString;
+                exitTimeString = "--:--:--";
+
+                localStorage.setItem('entry_timestamp', entryTimestamp);
+                localStorage.setItem('entry_time_string', entryTimeString);
+                localStorage.setItem('exit_time_string', exitTimeString);
+            } else {
+                // 2. Przyłożenie – WYJŚCIE
+                isIn = false;
+                exitTimeString = timeString;
+
+                if (entryTimestamp) {
+                    const sessionSec = currentSec - entryTimestamp;
+                    totalSeconds += sessionSec;
+                    localStorage.setItem('total_seconds', totalSeconds);
+                }
+
+                entryTimestamp = null;
+                localStorage.setItem('exit_time_string', exitTimeString);
+                localStorage.removeItem('entry_timestamp');
+            }
+
+            localStorage.setItem('is_in', isIn);
+            updateUI();
+        }
+
+        // Pętla aktualizująca licznik czasu na bieżąco
+        setInterval(() => {
+            const nowSec = Math.floor(Date.now() / 1000);
+            let activeSessionSec = 0;
+
+            if (isIn && entryTimestamp) {
+                activeSessionSec = nowSec - entryTimestamp;
+            }
+
+            document.getElementById('current-session-time').textContent = formatHMS(activeSessionSec);
+            document.getElementById('total-time').textContent = formatHMS(totalSeconds + (isIn ? activeSessionSec : 0));
+        }, 1000);
+
+        updateUI();
     </script>
 
 </body>

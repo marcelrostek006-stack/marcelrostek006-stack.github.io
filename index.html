@@ -1,165 +1,79 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transmisja z Kamerki</title>
-  <!-- Biblioteka PeerJS do łatwego łączenia kamer w przeglądarce -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcel Rostek</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    h1 {
-      margin-bottom: 10px;
-    }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
 
-    .controls {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
 
-    button, input {
-      padding: 10px 15px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
-    }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            letter-spacing: 2px;
+        }
 
-    button {
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
+        .clock-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 5px;
+        }
 
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    input {
-      color: #000;
-    }
-
-    .video-container {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .video-box {
-      background: #1e1e1e;
-      padding: 10px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    video {
-      width: 400px;
-      height: 300px;
-      background-color: #000;
-      border-radius: 6px;
-      object-fit: cover;
-    }
-
-    .my-id {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #28a745;
-    }
-  </style>
+        .clock {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
 </head>
 <body>
 
-  <h1>Transmisja na żywo</h1>
-
-  <div class="my-id">Twoje ID transmisji: <span id="peer-id">Generowanie...</span></div>
-  <p>Wyślij to ID osobom, które mają oglądać Twój stream!</p>
-
-  <div class="controls">
-    <button id="start-btn">1. Włącz moją kamerkę i nadawaj</button>
-    <br>
-    <input type="text" id="remote-id" placeholder="Wklej ID streamera">
-    <button id="connect-btn">2. Oglądaj czyjąś transmisję</button>
-  </div>
-
-  <div class="video-container">
-    <div class="video-box">
-      <h3>Moja kamerka (NADAWANA)</h3>
-      <video id="local-video" autoplay muted playsinline></video>
+    <div class="container">
+        <h1>MARCEL ROSTEK</h1>
+        <div class="clock-label">Aktualna godzina</div>
+        <div class="clock" id="time">00:00</div>
     </div>
-    <div class="video-box">
-      <h3>Obraz od kogoś (ODBIERANY)</h3>
-      <video id="remote-video" autoplay playsinline></video>
-    </div>
-  </div>
 
-  <script>
-    // Inicjalizacja PeerJS (generuje unikalny identyfikator)
-    const peer = new Peer();
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('time').textContent = `${hours}:${minutes}`;
+        }
 
-    const peerIdSpan = document.getElementById('peer-id');
-    const localVideo = document.getElementById('local-video');
-    const remoteVideo = document.getElementById('remote-video');
-    const startBtn = document.getElementById('start-btn');
-    const connectBtn = document.getElementById('connect-btn');
-    const remoteIdInput = document.getElementById('remote-id');
+        // Aktualizacja godziny od razu przy załadowaniu strony
+        updateClock();
 
-    let localStream = null;
+        // Odświeżanie zegara co sekundę
+        setInterval(updateClock, 1000);
+    </script>
 
-    // Wyświetlenie unikalnego ID po połączeniu z serwerem PeerJS
-    peer.on('open', (id) => {
-      peerIdSpan.innerText = id;
-    });
-
-    // 1. Włączanie własnej kamerki po kliknięciu przycisku
-    startBtn.addEventListener('click', async () => {
-      try {
-        // Prośba o dostęp do kamerki i mikrofonu
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-        alert('Kamerka włączona! Teraz inni mogą się do Ciebie połączyć używając Twojego ID.');
-      } catch (err) {
-        console.error('Błąd uzyskiwania dostępu do kamerki:', err);
-        alert('Nie udało się uzyskać dostępu do kamerki/mikrofonu.');
-      }
-    });
-
-    // Obsługa sytuacji, gdy ktoś do nas dzwoni / chce oglądać nasz obraz
-    peer.on('call', (call) => {
-      if (localStream) {
-        // Odpowiadamy na połączenie, wysyłając nasz obraz z kamerki
-        call.answer(localStream);
-      } else {
-        alert('Ktoś próbuje obejrzeć Twój stream, ale nie włączyłeś jeszcze kamerki!');
-      }
-    });
-
-    // 2. Połączenie się jako widz do kogoś innego
-    connectBtn.addEventListener('click', () => {
-      const remoteId = remoteIdInput.value.trim();
-      if (!remoteId) {
-        alert('Wpisz ID osoby, którą chcesz oglądać!');
-        return;
-      }
-
-      // Łączymy się z podanym ID
-      const call = peer.call(remoteId, localStream);
-
-      // Gdy odbierzemy strumień wideo od streamera
-      call.on('stream', (remoteStream) => {
-        remoteVideo.srcObject = remoteStream;
-      });
-    });
-  </script>
 </body>
 </html>

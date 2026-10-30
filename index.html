@@ -63,14 +63,7 @@
 
         .status {
             font-weight: bold;
-        }
-
-        .status.in {
             color: #28a745;
-        }
-
-        .status.out {
-            color: #dc3545;
         }
 
         .info-row {
@@ -82,27 +75,6 @@
             font-weight: bold;
             color: #007bff;
         }
-
-        .btn {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            width: 100%;
-        }
-
-        .btn:hover {
-            background-color: #0056b3;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
     </style>
 </head>
 <body>
@@ -113,20 +85,18 @@
         <div class="clock" id="time">00:00:00</div>
 
         <div class="status-box">
-            <div>Status: <span id="status-text" class="status out">Nieobecny</span></div>
-            <div class="info-row">Wejście: <span id="entry-time-str">--:--:--</span></div>
-            <div class="info-row">Wyjście: <span id="exit-time-str">--:--:--</span></div>
-            <div class="info-row">Czas tej sesji: <span id="current-session-time">00g 00m 00s</span></div>
+            <div>Status: <span class="status">Na stronie (Aktywny)</span></div>
+            <div class="info-row">Ostatnie wejście: <span id="entry-time-str">--:--:--</span></div>
+            <div class="info-row">Czas tej wizyty: <span id="current-session-time">00g 00m 00s</span></div>
+            <div class="info-row">Liczba odwiedzin: <span id="visit-count">0</span></div>
             <div class="info-row" style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 8px;">
                 Łącznie spędzony czas: <span id="total-time">00g 00m 00s</span>
             </div>
         </div>
-
-        <button class="btn" id="toggle-btn" onclick="togglePresence()">Przyłóż (Wejdź / Wyjdź)</button>
     </div>
 
     <script>
-        // Główny zegar strony (z sekundami)
+        // Główny zegar strony
         function updateClock() {
             const now = new Date();
             document.getElementById('time').textContent = now.toTimeString().split(' ')[0];
@@ -134,13 +104,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Odczyt stanu z localStorage
-        let isIn = localStorage.getItem('is_in') === 'true';
-        let totalSeconds = parseInt(localStorage.getItem('total_seconds')) || 0;
-        let entryTimestamp = parseInt(localStorage.getItem('entry_timestamp')) || null;
-        let entryTimeString = localStorage.getItem('entry_time_string') || '--:--:--';
-        let exitTimeString = localStorage.getItem('exit_time_string') || '--:--:--';
-
+        // Formatowanie czasu na godziny, minuty, sekundy
         function formatHMS(totalSec) {
             const h = Math.floor(totalSec / 3600);
             const m = Math.floor((totalSec % 3600) / 60);
@@ -148,69 +112,34 @@
             return `${String(h).padStart(2, '0')}g ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
         }
 
-        function updateUI() {
-            const statusText = document.getElementById('status-text');
-            document.getElementById('entry-time-str').textContent = entryTimeString;
-            document.getElementById('exit-time-str').textContent = exitTimeString;
+        // Inicjalizacja wizyty po wejściu na stronę
+        let visits = parseInt(localStorage.getItem('visit_count')) || 0;
+        visits += 1;
+        localStorage.setItem('visit_count', visits);
+        document.getElementById('visit-count').textContent = visits;
 
-            if (isIn) {
-                statusText.textContent = "Obecny (Wszedłeś)";
-                statusText.className = "status in";
-            } else {
-                statusText.textContent = "Nieobecny (Wyszedłeś)";
-                statusText.className = "status out";
-            }
-        }
+        const sessionStartTimestamp = Math.floor(Date.now() / 1000);
+        const entryDate = new Date();
+        const entryTimeString = entryDate.toTimeString().split(' ')[0];
+        document.getElementById('entry-time-str').textContent = entryTimeString;
 
-        function togglePresence() {
-            const now = new Date();
-            const timeString = now.toTimeString().split(' ')[0];
-            const currentSec = Math.floor(now.getTime() / 1000);
+        let totalSeconds = parseInt(localStorage.getItem('total_seconds')) || 0;
 
-            if (!isIn) {
-                // 1. Przyłożenie – WEJŚCIE
-                isIn = true;
-                entryTimestamp = currentSec;
-                entryTimeString = timeString;
-                exitTimeString = "--:--:--";
-
-                localStorage.setItem('entry_timestamp', entryTimestamp);
-                localStorage.setItem('entry_time_string', entryTimeString);
-                localStorage.setItem('exit_time_string', exitTimeString);
-            } else {
-                // 2. Przyłożenie – WYJŚCIE
-                isIn = false;
-                exitTimeString = timeString;
-
-                if (entryTimestamp) {
-                    const sessionSec = currentSec - entryTimestamp;
-                    totalSeconds += sessionSec;
-                    localStorage.setItem('total_seconds', totalSeconds);
-                }
-
-                entryTimestamp = null;
-                localStorage.setItem('exit_time_string', exitTimeString);
-                localStorage.removeItem('entry_timestamp');
-            }
-
-            localStorage.setItem('is_in', isIn);
-            updateUI();
-        }
-
-        // Pętla aktualizująca licznik czasu na bieżąco
+        // Pętla aktualizująca czas trwania bieżącej sesji oraz łączny czas
         setInterval(() => {
             const nowSec = Math.floor(Date.now() / 1000);
-            let activeSessionSec = 0;
+            const currentSessionSec = nowSec - sessionStartTimestamp;
 
-            if (isIn && entryTimestamp) {
-                activeSessionSec = nowSec - entryTimestamp;
-            }
-
-            document.getElementById('current-session-time').textContent = formatHMS(activeSessionSec);
-            document.getElementById('total-time').textContent = formatHMS(totalSeconds + (isIn ? activeSessionSec : 0));
+            document.getElementById('current-session-time').textContent = formatHMS(currentSessionSec);
+            document.getElementById('total-time').textContent = formatHMS(totalSeconds + currentSessionSec);
         }, 1000);
 
-        updateUI();
+        // Zapisywanie czasu do localStorage w momencie opuszczania / zamykania karty
+        window.addEventListener('beforeunload', () => {
+            const nowSec = Math.floor(Date.now() / 1000);
+            const currentSessionSec = nowSec - sessionStartTimestamp;
+            localStorage.setItem('total_seconds', totalSeconds + currentSessionSec);
+        });
     </script>
 
 </body>
